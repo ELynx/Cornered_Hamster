@@ -307,8 +307,9 @@ const getGrabTargets = function (room, what) {
 const creepXenergyXgate = function (creep, intentPower) {
   // how much (max) energy intent will spend
   const energyToPower = creep.__work__ * intentPower
-  // because upgrade controller is attempted every tick, and does not interfere with pipeline 1, do not block it
-  const energySpentOnUpgradeController = creep.__work__ * UPGRADE_CONTROLLER_POWER
+  // upgrade controller is attempted every tick, and does not interfere with pipeline 1
+  // keep enough energy to perform upgrade + intent this tick and upgrade + harvest next
+  const energySpentOnUpgradeController = creep.__work__ * UPGRADE_CONTROLLER_POWER * 2
   // keep in mind that some power levels are not reachable
   const energyMax = creep.store.getCapacity()
   // do not fire intent below this level
