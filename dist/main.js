@@ -1,4 +1,4 @@
-const CONTROLLER_SIGN = 'https://github.com/ELynx/Cornered_Hamster'
+const CONTROLLER_SIGN_TEXT = 'https://github.com/ELynx/Cornered_Hamster'
 
 module.exports.loop = function () {
   activateSafeModeIfAttacked()
@@ -49,16 +49,16 @@ const signController = function (creep) {
 
     if (target.sign) {
       if (target.sign.username !== SYSTEM_USERNAME) {
-        if (target.sign.text !== CONTROLLER_SIGN || target.sign.username !== creep.owner.username) {
+        if (target.sign.text !== CONTROLLER_SIGN_TEXT || target.sign.username !== creep.owner.username) {
           // this has potential to loop over and over when text sanitation or uncaught forced marker is there
           console.log('Controller signature was ' + target.sign.text)
-          console.log('Controller signature set ' + CONTROLLER_SIGN)
-          rc = creep.signController(target, CONTROLLER_SIGN)
+          console.log('Controller signature set ' + CONTROLLER_SIGN_TEXT)
+          rc = creep.signController(target, CONTROLLER_SIGN_TEXT)
           console.log('Result is ' + rc)
         }
       }
     } else {
-      rc = creep.signController(target, CONTROLLER_SIGN)
+      rc = creep.signController(target, CONTROLLER_SIGN_TEXT)
     }
   }
 
