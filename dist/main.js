@@ -27,7 +27,7 @@ const work = function (creep) {
   creep.__work__ = creep.getActiveBodyparts(WORK)
 
   signController(creep)
-  grab(creep)
+  grabEnergy(creep)
   upgradeController(creep)
   restock(creep)
   repair(creep)
@@ -69,8 +69,8 @@ const signController = function (creep) {
   return rc
 }
 
-const grab = function (creep) {
-  const targets = getGrabTargets(creep.room)
+const grabEnergy = function (creep) {
+  const targets = getGrabTargets(creep.room, RESOURCE_ENERGY)
 
   let didWithdraw = false
   let didPickup = false
@@ -130,7 +130,7 @@ const repair = function (creep) {
     return ERR_BUSY
   }
 
-  const gateRc = creepXpowerXgate(creep, REPAIR_POWER * REPAIR_COST)
+  const gateRc = creepXenergyXgate(creep, REPAIR_POWER * REPAIR_COST)
   if (gateRc !== OK) {
     return gateRc
   }
@@ -155,7 +155,7 @@ const build = function (creep) {
     return ERR_BUSY
   }
 
-  const gateRc = creepXpowerXgate(creep, BUILD_POWER)
+  const gateRc = creepXenergyXgate(creep, BUILD_POWER)
   if (gateRc !== OK) {
     return gateRc
   }
@@ -184,7 +184,6 @@ const harvest = function (creep) {
 
   const inRange = _.filter(targets, x => x.pos.isNearTo(creep))
   if (inRange.length === 0) {
-    console.log('No source found for creep [' + creep.name + ']')
     return ERR_NOT_FOUND
   }
 
@@ -218,15 +217,15 @@ const getCreep = function (creepName, room, x, y) {
   const name1 = creepName
   const name2 = makeAlternativeName(creepName)
 
-  spawnCreep(name1, name2, room, x, y)
+  maybeSpawnCreep(name1, name2, room, x, y)
 
   const creep1 = Game.creeps[name1]
-  if (creep1 && creep1.spawning === false) {
+  if (creep1 && !creep1.spawning) {
     return creep1
   }
 
   const creep2 = Game.creeps[name2]
-  if (creep2 && creep2.spawning === false) {
+  if (creep2 && !creep2.spawning) {
     return creep2
   }
 
@@ -254,9 +253,9 @@ const getCreepXgate = function (room, x, y) {
   return OK
 }
 
-const getGrabTargets = function (room) {
-  if (room.__grab_target_cache__) {
-    return room.__grab_target_cache__
+const getGrabTargets = function (room, what) {
+  if (room.__grab_target_cache__ && room.__grab_target_cache__[what]) {
+    return room.__grab_target_cache__[what]
   }
 
   const tombstones = room.find(FIND_TOMBSTONES)
@@ -266,7 +265,7 @@ const getGrabTargets = function (room) {
   const targets = []
 
   for (const tombstone of tombstones) {
-    if (tombstone.store.getUsedCapacity(RESOURCE_ENERGY) > 0) {
+    if (tombstone.store.getUsedCapacity(what) > 0) {
       targets.push(
         {
           type: LOOK_TOMBSTONES,
@@ -277,7 +276,7 @@ const getGrabTargets = function (room) {
   }
 
   for (const ruin of ruins) {
-    if (ruin.store.getUsedCapacity(RESOURCE_ENERGY) > 0) {
+    if (ruin.store.getUsedCapacity(what) > 0) {
       targets.push(
         {
           type: LOOK_RUINS,
@@ -288,7 +287,7 @@ const getGrabTargets = function (room) {
   }
 
   for (const resource of resources) {
-    if (resource.resourceType === RESOURCE_ENERGY && resource.amount > 0) {
+    if (resource.resourceType === what && resource.amount > 0) {
       targets.push(
         {
           type: LOOK_RESOURCES,
@@ -298,16 +297,24 @@ const getGrabTargets = function (room) {
     }
   }
 
-  return (room.__grab_target_cache__ = targets)
+  if (room.__grab_target_cache__ === undefined) {
+    room.__grab_target_cache__ = { }
+  }
+
+  return (room.__grab_target_cache__[what] = targets)
 }
 
-const creepXpowerXgate = function (creep, power) {
-  const energyToPower = creep.__work__ * power
+const creepXenergyXgate = function (creep, intentPower) {
+  // how much (max) energy intent will spend
+  const energyToPower = creep.__work__ * intentPower
+  // because upgrade controller is attempted every tick, and does not interfere with pipeline 1, do not block it
   const energySpentOnUpgradeController = creep.__work__ * UPGRADE_CONTROLLER_POWER
+  // keep in mind that some power levels are not reachable
   const energyMax = creep.store.getCapacity()
-  const energyTreshold = Math.min(energyToPower + energySpentOnUpgradeController, energyMax)
+  // do not fire intent below this level
+  const energyThreshold = Math.min(energyToPower + energySpentOnUpgradeController, energyMax)
 
-  if (creep.store.getUsedCapacity(RESOURCE_ENERGY) < energyTreshold) {
+  if (creep.store.getUsedCapacity(RESOURCE_ENERGY) < energyThreshold) {
     return ERR_NOT_ENOUGH_RESOURCES
   }
 
@@ -322,21 +329,27 @@ const getRepairTargets = function (room) {
   // if there is construction to be done, do not over-build ramps, walls and roads
   // 30000 is two decays of road on the wall
   const constructionSites = room.find(FIND_CONSTRUCTION_SITES)
-  const belowHits = constructionSites.length > 0 ? 30000 : Number.MAX_SAFE_INTEGER
+  const hitsThreshold = constructionSites.length > 0 ? 30000 : Number.MAX_SAFE_INTEGER
 
   const structures = room.find(FIND_STRUCTURES)
 
-  const canBeRepaired = _.filter(structures, x => (CONSTRUCTION_COST[x.structureType] && x.hits && x.hitsMax && x.hits < x.hitsMax && x.hits < belowHits))
+  const canBeRepaired = _.filter(structures, x => (CONSTRUCTION_COST[x.structureType] && x.hits && x.hitsMax && x.hits < x.hitsMax && x.hits < hitsThreshold))
   const mineOrNeutral = _.filter(canBeRepaired, x => (x.my || true))
 
   return (room.__repair_target_cache__ = mineOrNeutral)
 }
 
 const makeAlternativeName = function (name) {
-  return name.replace('a', 'ä').replace('o', 'ö').replace('u', 'ü').replace('e', 'ё')
+  const alternativeName = name.replace('a', 'ä').replace('o', 'ö').replace('u', 'ü').replace('e', 'ё')
+
+  if (alternativeName === name) {
+    return name + '_twin'
+  } else {
+    return alternativeName
+  }
 }
 
-const spawnCreep = function (name1, name2, room, x, y) {
+const maybeSpawnCreep = function (name1, name2, room, x, y) {
   // if something is already spawning
   const creep1 = Game.creeps[name1]
   if (creep1 && creep1.spawning) {
@@ -371,11 +384,12 @@ const spawnCreep = function (name1, name2, room, x, y) {
   // check if creep with enough life exists
   if (creep) {
     const ticksToSpawn = body.length * CREEP_SPAWN_TIME
+    // experimentally tested to be this operator
     if (creep.ticksToLive >= ticksToSpawn) {
       return OK
     }
 
-    // replace 1st name if necessary
+    // swap creep names
     if (creep.name === creepName) {
       creepName = otherCreepName
     }
@@ -450,7 +464,7 @@ const performAutobuild = function () {
 }
 
 Room.prototype.savePlan = function () {
-  const allStructures = this
+  const structures = this
     .find(FIND_STRUCTURES)
     .sort(
       function (s1, s2) {
@@ -463,7 +477,7 @@ Room.prototype.savePlan = function () {
     )
 
   let plan = ''
-  for (const structure of allStructures) {
+  for (const structure of structures) {
     const code = structure.encode()
     if (code === undefined) continue
 
