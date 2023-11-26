@@ -1,14 +1,20 @@
 const CONTROLLER_SIGN = 'https://github.com/ELynx/Cornered_Hamster'
 
 module.exports.loop = function () {
-  creeps()
-  autobuild()
-  safeModeIfAttacked()
+  activateSafeModeIfAttacked()
+  controlCreeps()
+  performAutobuild()
   generatePixel()
   clearMemory()
 }
 
-const creeps = function () {
+const activateSafeModeIfAttacked = function () {
+  if (Game.time % 100 === 0) {
+    console.log('TODO parse room history and detect attacks')
+  }
+}
+
+const controlCreeps = function () {
   for (const flagName in Game.flags) {
     if (flagName === 'savePlan') continue
     work(getCreepByFlagName(flagName))
@@ -424,7 +430,7 @@ const makeBody = function (room) {
   return (room.__make_body_cache__ = _.shuffle(body))
 }
 
-const autobuild = function () {
+const performAutobuild = function () {
   const flag = Game.flags.savePlan
   if (flag) {
     if (flag.room) {
@@ -547,12 +553,6 @@ Structure.prototype.decode = function (code) {
   const structureType = IndexToStructureType[index]
 
   return [{ x: xxxxx, y: yyyyyy }, structureType]
-}
-
-const safeModeIfAttacked = function () {
-  if (Game.time % 100 === 0) {
-    console.log('TODO parse room history and detect attacks')
-  }
 }
 
 const generatePixel = function () {
