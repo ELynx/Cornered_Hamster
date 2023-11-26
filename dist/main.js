@@ -1,6 +1,9 @@
+const CONTROLLER_SIGN = 'https://github.com/ELynx/Cornered_Hamster'
+
 module.exports.loop = function () {
   creeps()
   autobuild()
+  safeModeIfAttacked()
   generatePixel()
   clearMemory()
 }
@@ -17,12 +20,47 @@ const work = function (creep) {
 
   creep.__work__ = creep.getActiveBodyparts(WORK)
 
+  signController(creep)
   grab(creep)
   upgradeController(creep)
   restock(creep)
   repair(creep)
   build(creep)
   harvest(creep)
+}
+
+const signController = function (creep) {
+  const target = creep.room.controller
+
+  if (target.__signed__) {
+    return OK
+  }
+
+  let rc = ERR_NOT_IN_RANGE
+
+  if (target.pos.isNearTo(creep)) {
+    rc = OK // do not bother with all if-else
+
+    if (target.sign) {
+      if (target.sign.username !== SYSTEM_USERNAME) {
+        if (target.sign.text !== CONTROLLER_SIGN || target.sign.username !== creep.owner.username) {
+          // this has potential to loop over and over when text sanitation or uncaught forced marker is there
+          console.log('Controller signature was ' + target.sign.text)
+          console.log('Controller signature set ' + CONTROLLER_SIGN)
+          rc = creep.signController(target, CONTROLLER_SIGN)
+          console.log('Result is ' + rc)
+        }
+      }
+    } else {
+      rc = creep.signController(target, CONTROLLER_SIGN)
+    }
+  }
+
+  if (rc === OK) {
+    target.__signed__ = true
+  }
+
+  return rc
 }
 
 const grab = function (creep) {
@@ -45,7 +83,7 @@ const grab = function (creep) {
 
     if (didPickup === false && target.type === LOOK_RESOURCES) {
       const rc = creep.pickup(from)
-      if (rc === 0) {
+      if (rc === OK) {
         didPickup = true
       }
     }
@@ -59,7 +97,13 @@ const grab = function (creep) {
 }
 
 const upgradeController = function (creep) {
-  return creep.upgradeController(creep.room.controller)
+  const target = creep.room.controller
+
+  if (target.pos.inRangeTo(creep, 3)) {
+    return creep.upgradeController(target)
+  }
+
+  return ERR_NOT_IN_RANGE
 }
 
 const restock = function (creep) {
@@ -308,7 +352,7 @@ const spawnCreep = function (name1, name2, room, x, y) {
   // both can be undefined
   const creep = creep1 || creep2
 
-  // see if preemprive spawn is needed
+  // see if body is possible
   const body = makeBody(room)
   if (body.length === 0) {
     return ERR_NOT_ENOUGH_RESOURCES
@@ -325,6 +369,7 @@ const spawnCreep = function (name1, name2, room, x, y) {
       return OK
     }
 
+    // replace 1st name if necessary
     if (creep.name === creepName) {
       creepName = otherCreepName
     }
@@ -500,6 +545,12 @@ Structure.prototype.decode = function (code) {
   const structureType = IndexToStructureType[index]
 
   return [{ x: xxxxx, y: yyyyyy }, structureType]
+}
+
+const safeModeIfAttacked = function () {
+  if (Game.time % 100 === 0) {
+    console.log('TODO parse room history and detect attacks')
+  }
 }
 
 const generatePixel = function () {

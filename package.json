@@ -15,6 +15,7 @@
       "ERR_BUSY",
       "ERR_INVALID_TARGET",
       "ERR_NOT_FOUND",
+      "ERR_NOT_IN_RANGE",
       "FIND_CONSTRUCTION_SITES",
       "FIND_DROPPED_RESOURCES",
       "FIND_RUINS",
@@ -47,6 +48,7 @@
       "STRUCTURE_TOWER",
       "STRUCTURE_WALL",
       "Structure",
+      "SYSTEM_USERNAME",
       "TERRAIN_MASK_WALL",
       "WORK"
     ]
