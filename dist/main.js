@@ -416,7 +416,9 @@ const makeBody = function (room) {
 
   // if someone there to restock
   if (_.keys(Game.creeps).length > 0) {
-    console.log('TODO body economics')
+    if (Game.time % 100 === 0) {
+      console.log('TODO body economics')
+    }
   }
 
   return (room.__make_body_cache__ = _.shuffle(body))
