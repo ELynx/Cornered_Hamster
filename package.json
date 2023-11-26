@@ -1,0 +1,13 @@
+{
+  "name": "screepsai",
+  "version": "1.0.0",
+  "devDependencies": {
+    "grunt": "~1.5.3",
+    "esbuild": "~0.17.5"
+  },
+  "standard": {
+    "globals": [
+      "_"
+    ]
+  }
+}

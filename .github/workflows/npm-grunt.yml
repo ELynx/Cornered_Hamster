@@ -1,0 +1,65 @@
+name: Push to Screeps server
+
+on:
+  workflow_dispatch:
+    inputs:
+      #checkov:skip=CKV_GHA_7:Push destination is fluid and is modifiable by hand.
+      target_branch:
+        description: "Target branch"
+        required: true
+        default: "default"
+        type: string
+      ptr:
+        description: "Send to Public Test Realm"
+        required: true
+        default: false
+        type: boolean
+      bundle:
+        description: "Bundle files all together"
+        required: true
+        default: false
+        type: boolean
+
+permissions: read-all
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 18.x
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+
+      - name: Push as-is
+        if: ${{ !inputs.bundle }}
+        env:
+          PUSH_EMAIL: ${{ secrets.PUSH_EMAIL }}
+          PUSH_TOKEN: ${{ secrets.PUSH_TOKEN }}
+          PUSH_BRANCH: ${{ inputs.target_branch }}
+          PUSH_PTR: ${{ inputs.ptr }}
+          PUSH_WHAT: "dist/*.js"
+        run: |
+          npm install
+          npm install grunt
+          npm install grunt-screeps
+          grunt screeps
+
+      - name: Push bundled
+        if: ${{ inputs.bundle }}
+        env:
+          PUSH_EMAIL: ${{ secrets.PUSH_EMAIL }}
+          PUSH_TOKEN: ${{ secrets.PUSH_TOKEN }}
+          PUSH_BRANCH: ${{ inputs.target_branch }}
+          PUSH_PTR: ${{ inputs.ptr }}
+          PUSH_WHAT: "out/main.js"
+        run: |
+          npm install
+          npm install grunt
+          npm install grunt-screeps
+          npm install esbuild
+          ./node_modules/.bin/esbuild ./dist/main.js --outdir=out --minify --bundle --platform=node --target=node8.9.3
+          grunt screeps
