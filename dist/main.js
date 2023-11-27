@@ -531,7 +531,30 @@ const NPC_USERNAMES = [
 ]
 
 const activateSafeMode = function (room) {
-  console.log('TODO eeeeeooooooeeeo at ' + room.name)
+  if (room.__safe_mode_attempted__) return ERR_BUSY
+
+  const target = room.controller
+  if (target === undefined) return ERR_INVALID_TARGET
+  if (!target.my) return ERR_NOT_OWNER
+  if (!target.canActivateSafeMode()) return ERR_NOT_ENOUGH_RESOURCES
+
+  room.__safe_mode_attempted__ = true
+
+  const rc = target.activateSafeMode()
+
+  const message = 'Attempting to activate safe mode at room ' + room.name + ' with rc ' + rc
+  console.log(message)
+  Game.notify(message)
+
+  return rc
+}
+
+StructureController.prototype.canActivateSafeMode = function () {
+  if (this.safeMode) return false
+  if (this.safeModeCooldown) return false
+  if (this.upgradeBlocked) return false
+
+  return this.safeModeAvailable > 0
 }
 
 const performAutobuild = function () {
