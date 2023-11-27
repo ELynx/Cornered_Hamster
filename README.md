@@ -1,3 +1,5 @@
+[![DeepSource](https://app.deepsource.com/gh/ELynx/Cornered_Hamster.svg/?label=active+issues&show_trend=true&token=61W4k5krsePeYOi36egDsmJ-)](https://app.deepsource.com/gh/ELynx/Cornered_Hamster/)
+
 # Screeps AI for [shard3/E56N59](https://screeps.com/a/#!/room/shard3/E56N59)
 
 ## Folders
