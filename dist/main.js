@@ -1,16 +1,16 @@
 const CONTROLLER_SIGN_TEXT = 'https://github.com/ELynx/Cornered_Hamster'
 
 module.exports.loop = function () {
-  activateSafeModeIfAttacked()
+  processRoomEventLogs() // first because activates safe mode
   controlCreeps()
   performAutobuild()
   generatePixel()
   clearMemory()
 }
 
-const activateSafeModeIfAttacked = function () {
-  if (Game.time % 100 === 0) {
-    console.log('TODO parse room history and detect attacks')
+const processRoomEventLogs = function () {
+  for (const roomName in Game.rooms) {
+    processRoomEventLog(Game.rooms[roomName])
   }
 }
 
@@ -443,6 +443,95 @@ const makeBody = function (room) {
   }
 
   return (room.__make_body_cache__ = _.shuffle(body))
+}
+
+const processRoomEventLog = function (room) {
+  // for now handle only own controlled rooms
+  if (room.controller === undefined) return
+  if (!room.controller.my) return
+
+  const eventLog = room.getEventLog()
+
+  for (const eventRecord of eventLog) {
+    switch (eventRecord.event) {
+      case EVENT_ATTACK:
+        handle_EVENT_ATTACK(room, eventRecord)
+        break
+    }
+  }
+}
+
+const handle_EVENT_ATTACK = function (room, eventRecord) {
+  // fight back is automatic
+  if (eventRecord.data.attackType === EVENT_ATTACK_TYPE_HIT_BACK) return
+  // nuke is detected elsewhere
+  if (eventRecord.data.attackType === EVENT_ATTACK_TYPE_NUKE) return
+
+  const attacker = getObjectByIdDeadOrAlive(room, eventRecord.objectId)
+  if (attacker === null || attacker.owner === undefined || attacker.my) return
+
+  const target = this.getObjectById(room, eventRecord.data.targetId)
+  if (target === null) return
+
+  let hostileAction
+
+  if (target.owner) {
+    hostileAction = target.my
+  } else {
+    // n.b. does not handle reserved rooms
+    hostileAction = room.controller ? room.controller.my : false 
+  }
+
+  if (hostileAction === false) return
+
+  const isNpcAttack = _.some(NPC_USERNAMES, _.matches(attacker.owner.username))
+
+  if (isNpcAttack) {
+    if (target.structureType && target.structureType === STRUCTURE_SPAWN) {
+      activateSafeMode(room)
+    }
+  } else {
+    if (target.hits <= 0) {
+      activateSafeMode(room)
+    }
+  }
+}
+
+const getObjectByIdDeadOrAlive = function (room, id) {
+  const ownStructure = Game.structures[id]
+  if (ownStructure) return ownStructure
+
+  const byId = Game.getObjectById(id)
+  if (byId !== null) {
+    return byId
+  }
+
+  const tombstones = room.find(FIND_TOMBSTONES)
+  const byTombstone = _.find(tombstones, _.matchesProperty('creep.id', id))
+  if (byTombstone !== undefined) {
+    return byTombstone.creep
+  }
+
+  const ruins = room.find(FIND_RUINS)
+  const byRuin = _.find(ruins, _.matchesProperty('structure.id', id))
+  if (byRuin !== undefined) {
+    return byRuin.structure
+  }
+
+  // as original API
+  return null
+}
+
+const NPC_USERNAMES = [
+  'Invader',
+  'Power Bank',
+  'Public',
+  SYSTEM_USERNAME,
+  'Source Keeper'
+]
+
+const activateSafeMode = function (room) {
+  console.log('TODO eeeeeooooooeeeo at ' + room.name)
 }
 
 const performAutobuild = function () {
