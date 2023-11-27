@@ -1,3 +1,5 @@
+console.log('Code loaded')
+
 const CONTROLLER_SIGN_TEXT = 'https://github.com/ELynx/Cornered_Hamster'
 
 module.exports.loop = function () {
