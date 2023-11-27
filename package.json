@@ -53,6 +53,7 @@
       "STRUCTURE_TOWER",
       "STRUCTURE_WALL",
       "Structure",
+      "StructureController",
       "SYSTEM_USERNAME",
       "TERRAIN_MASK_WALL",
       "UPGRADE_CONTROLLER_POWER",
