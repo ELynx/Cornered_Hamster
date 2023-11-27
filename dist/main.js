@@ -341,7 +341,15 @@ const getRepairTargets = function (room) {
 }
 
 const makeAlternativeName = function (name) {
-  const alternativeName = name.replaceAll('a', 'ä').replaceAll('o', 'ö').replaceAll('u', 'ü').replaceAll('e', 'ё')
+  const alternativeName = name
+  .replace(/a/g, 'ä')
+  .replace(/а/g, 'ä')
+  .replace(/o/g, 'ö')
+  .replace(/о/g, 'ö')
+  .replace(/u/g, 'ü')
+  .replace(/и/g, 'й')
+  .replace(/e/g, 'ё')
+  .replace(/е/g, 'ё')
 
   if (alternativeName === name) {
     return name + '_twin'
