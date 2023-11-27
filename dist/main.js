@@ -440,6 +440,10 @@ const makeBody = function (room) {
     if (room.energyCapacityAvailable >= 350) {
       body = [WORK, WORK, WORK, CARRY]
     }
+
+    if (room.energyCapacityAvailable >= 450) {
+      body = [WORK, WORK, WORK, WORK, CARRY]
+    }
   }
 
   return (room.__make_body_cache__ = _.shuffle(body))
