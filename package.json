@@ -8,6 +8,7 @@
   "standard": {
     "globals": [
       "_",
+      "BODYPART_COST",
       "BUILD_POWER",
       "CARRY",
       "CONSTRUCTION_COST",
