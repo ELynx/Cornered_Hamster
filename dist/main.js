@@ -433,12 +433,12 @@ const makeBody = function (room) {
     return room.__make_body_cache__
   }
 
-  const body = [WORK, WORK, CARRY] // backup for 300 spawn trickle charge
+  let body = [WORK, WORK, CARRY] // backup for 300 spawn trickle charge
 
   // if someone there to restock
   if (_.keys(Game.creeps).length > 0) {
-    if (Game.time % 100 === 0) {
-      console.log('TODO body economics')
+    if (room.energyCapacityAvailable >= 350) {
+      body = [WORK, WORK, WORK, CARRY]
     }
   }
 
