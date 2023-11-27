@@ -17,7 +17,9 @@ const processRoomEventLogs = function () {
 }
 
 const controlCreeps = function () {
-  for (const flagName in Game.flags) {
+  // to resolve potential softlocks
+  const flagNames = _.shuffle(_.keys(Game.flags))
+  for (const flagName of flagNames) {
     if (flagName === 'savePlan') continue
     work(getCreepByFlagName(flagName))
   }
