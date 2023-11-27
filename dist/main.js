@@ -470,7 +470,7 @@ const handleEventAttack = function (room, eventRecord) {
   const attacker = getObjectByIdDeadOrAlive(room, eventRecord.objectId)
   if (attacker === null || attacker.owner === undefined || attacker.my) return
 
-  const target = this.getObjectById(room, eventRecord.data.targetId)
+  const target = getObjectByIdDeadOrAlive(room, eventRecord.data.targetId)
   if (target === null) return
 
   let hostileAction
