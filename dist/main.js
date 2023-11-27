@@ -455,13 +455,13 @@ const processRoomEventLog = function (room) {
   for (const eventRecord of eventLog) {
     switch (eventRecord.event) {
       case EVENT_ATTACK:
-        handle_EVENT_ATTACK(room, eventRecord)
+        handleEventAttack(room, eventRecord)
         break
     }
   }
 }
 
-const handle_EVENT_ATTACK = function (room, eventRecord) {
+const handleEventAttack = function (room, eventRecord) {
   // fight back is automatic
   if (eventRecord.data.attackType === EVENT_ATTACK_TYPE_HIT_BACK) return
   // nuke is detected elsewhere
@@ -479,7 +479,7 @@ const handle_EVENT_ATTACK = function (room, eventRecord) {
     hostileAction = target.my
   } else {
     // n.b. does not handle reserved rooms
-    hostileAction = room.controller ? room.controller.my : false 
+    hostileAction = room.controller ? room.controller.my : false
   }
 
   if (hostileAction === false) return
