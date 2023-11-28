@@ -47,6 +47,7 @@ const work = function (creep) {
   harvest(creep)
   dismantle(creep)
   cancelConstructionSites(creep)
+  handleInvasion(creep)
 }
 
 const signController = function (creep) {
@@ -291,6 +292,36 @@ const cancelConstructionSites = function (creep) {
   return cancelled ? OK : ERR_BUSY
 }
 
+const handleInvasion = function (creep) {
+  if (creep.room.__invasion_npc__) {
+    const structures = creep.room.find(FIND_STRUCTURES)
+
+    const spawns = _.filter(
+      structures,
+      function (structure) {
+        if (structure.structureType !== STRUCTURE_SPAWN) return false
+        if (structure.spawning || structure.__spawned_this_tick__) return false
+        return !structure.__recycled_this_tick__
+      }
+    )
+
+    const inRange = _.filter(spawns, x => x.pos.isNearTo(creep))
+
+    for (const spawn of inRange) {
+      // because Invader suicides when there are no creeps in room
+      const rc = spawn.recycleCreep(creep)
+      if (rc === OK) {
+        spawn.__recycled_this_tick__ = true
+        return OK
+      }
+    }
+
+    return ERR_NOT_FOUND
+  }
+
+  return ERR_BUSY
+}
+
 const getCreepByFlagName = function (flagName) {
   const flag = Game.flags[flagName]
   if (flag === undefined) {
@@ -329,6 +360,11 @@ const getCreep = function (creepName, room, x, y) {
 }
 
 const getCreepXgate = function (room, x, y) {
+  // nope out
+  if (room.__invasion_npc__) {
+    return ERR_BUSY
+  }
+
   const terrain = room.getTerrain()
   const atXY = terrain.get(x, y)
 
