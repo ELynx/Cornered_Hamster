@@ -152,7 +152,7 @@ const restock = function (creep) {
 
   let withEnergyDemand = _.filter(targets, x => (x.store && x.store.getFreeCapacity(RESOURCE_ENERGY) > 0))
 
-  const balance = room.find(FIND_SOURCES_ACTIVE).length === 0
+  const balance = creep.room.find(FIND_SOURCES_ACTIVE).length === 0
   if (balance) {
     withEnergyDemand = _.filter(withEnergyDemand, x => x.structureType !== STRUCTURE_CONTAINER)
   }
@@ -489,9 +489,15 @@ const maybeSpawnCreep = function (name1, name2, room, x, y) {
   const creep = creep1 || creep2
 
   // see if body is possible
-  const body = makeBody(room)
+  let body = makeBody(room)
   if (body.length === 0) {
     return ERR_NOT_ENOUGH_RESOURCES
+  }
+
+  // penalty for absent container
+  if (room.getTerrain().get(x, y) === TERRAIN_MASK_WALL) {
+    // remove 1st element
+    body = _.rest(body)
   }
 
   // by default, give 1st name
@@ -553,6 +559,8 @@ const makeBody = function (room) {
   const [energy, capacity] = roomEnergyAndEnergyCapacity(room)
   if (capacity <= 0) return []
 
+  // n.b. WORK must be first, to properly penalize creep on wall
+
   let body = [WORK, WORK, CARRY] // backup for 300 spawn trickle charge
 
   if (capacity >= 350) {
@@ -563,7 +571,7 @@ const makeBody = function (room) {
     body = [WORK, WORK, WORK, WORK, CARRY]
   }
 
-  return (room.__make_body_cache__ = _.shuffle(body))
+  return (room.__make_body_cache__ = body)
 }
 
 const roomEnergyAndEnergyCapacity = function (room) {
