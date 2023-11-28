@@ -449,7 +449,13 @@ const getRepairTargets = function (room) {
 
   const structures = room.find(FIND_STRUCTURES)
 
-  const canBeRepaired = _.filter(structures, x => (CONSTRUCTION_COST[x.structureType] && x.hits && x.hitsMax && x.hits < x.hitsMax && x.hits < hitsThreshold))
+  let canBeRepaired = _.filter(structures, x => (CONSTRUCTION_COST[x.structureType] && x.hits && x.hitsMax && x.hits < x.hitsMax && x.hits < hitsThreshold))
+
+  // to speed up balance tests on sim, cap ramparts at 45k
+  if (Game.rooms.sim) {
+    canBeRepaired = _.filter(canBeRepaired, x => (x.structureType !== STRUCTURE_RAMPART || x.hits < 45000))
+  }
+
   const mineOrNeutral = _.filter(canBeRepaired, x => (x.my || true))
 
   return (room.__repair_target_cache__ = mineOrNeutral)
