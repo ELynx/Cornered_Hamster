@@ -5,6 +5,7 @@ let forcedControllerSign = true // once in code load force the sign, it is visib
 
 module.exports.loop = function () {
   processRoomEventLogs() // first because activates safe mode
+  handleRoomStates()
   controlCreeps()
   performAutobuild()
   generatePixel()
@@ -14,6 +15,12 @@ module.exports.loop = function () {
 const processRoomEventLogs = function () {
   for (const roomName in Game.rooms) {
     processRoomEventLog(Game.rooms[roomName])
+  }
+}
+
+const handleRoomStates = function () {
+  for (const roomName in Game.rooms) {
+    handleRoomState(Game.rooms[roomName])
   }
 }
 
@@ -28,15 +35,6 @@ const controlCreeps = function () {
 
 const work = function (creep) {
   if (creep === undefined) return ERR_INVALID_TARGET
-
-  if (creep.room.controller && creep.room.controller.my && creep.room.__no_spawn__ === undefined) {
-    const structures = creep.room.find(FIND_STRUCTURES)
-    creep.room.__no_spawn__ = !_.some(structures, _.matchesProperty('structureType', STRUCTURE_SPAWN))
-
-    if (creep.room.__no_spawn__) {
-      creep.say('Panik', true)
-    }
-  }
 
   creep.__work__ = creep.getActiveBodyparts(WORK)
 
@@ -743,11 +741,21 @@ const activateSafeMode = function (room) {
 
   const rc = target.activateSafeMode()
 
+  // signal successful intent to following code
+  room.__safe_mode_activated__ = rc === OK
+
   const message = 'Attempting to activate safe mode at room ' + room.name + ' with rc ' + rc
   console.log(message)
   Game.notify(message)
 
   return rc
+}
+
+const handleRoomState = function (room) {
+  if (room.controller && room.controller.my && room.__no_spawn__ === undefined) {
+    const structures = room.find(FIND_STRUCTURES)
+    room.__no_spawn__ = !_.some(structures, _.matchesProperty('structureType', STRUCTURE_SPAWN))
+  }
 }
 
 StructureController.prototype.canActivateSafeMode = function () {
