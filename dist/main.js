@@ -360,17 +360,25 @@ const getCreep = function (creepName, room, x, y) {
 }
 
 const getCreepXgate = function (room, x, y) {
+  const structures = room.find(FIND_STRUCTURES)
+
+  const structuresAtXY = _.filter(structures, x => x.pos.isEqualTo(x, y))
+
+  // do not spawn into obstacle
+  for (const structure of structuresAtXY) {
+    if (_.some(OBSTACLE_OBJECT_TYPES, _.matches(structure.structureType))) {
+      return ERR_INVALID_TARGET
+    }
+  }
+
   const terrain = room.getTerrain()
-  const atXY = terrain.get(x, y)
+  const terrainAtXY = terrain.get(x, y)
 
   // do not spawn into wall
-  if (atXY === TERRAIN_MASK_WALL) {
-    const structures = room.find(FIND_STRUCTURES)
-    for (const structure of structures) {
-      if (structure.pos.x === x && structure.pos.y === y) {
-        if (structure.structureType === STRUCTURE_ROAD) {
-          return OK
-        }
+  if (terrainAtXY === TERRAIN_MASK_WALL) {
+    for (const structure of structuresAtXY) {
+      if (structure.structureType === STRUCTURE_ROAD) {
+        return OK
       }
     }
 
@@ -928,8 +936,8 @@ Room.prototype.buildFromPlan = function () {
         structures = this.find(FIND_STRUCTURES)
       }
 
-      const atXY = _.filter(structures, x => x.pos.isEqualTo(position.x, position.y))
-      for (const structure of atXY) {
+      const structuresAtXY = _.filter(structures, x => x.pos.isEqualTo(position.x, position.y))
+      for (const structure of structuresAtXY) {
         if (_.some(OBSTACLE_OBJECT_TYPES, _.matches(structure.structureType))) {
           structure.destroy()
         }
