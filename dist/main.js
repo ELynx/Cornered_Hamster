@@ -1,7 +1,7 @@
 console.log('Code loaded')
 
 const CONTROLLER_SIGN_TEXT = 'https://github.com/ELynx/Cornered_Hamster'
-const forcedControllerSign = true // once in code load force the sign, it is visible on new world map
+let forcedControllerSign = true // once in code load force the sign, it is visible on new world map
 
 module.exports.loop = function () {
   processRoomEventLogs() // first because activates safe mode
