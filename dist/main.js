@@ -46,6 +46,7 @@ const work = function (creep) {
   build(creep)
   harvest(creep)
   dismantle(creep)
+  cancelConstructionSites(creep)
 }
 
 const signController = function (creep) {
@@ -263,6 +264,31 @@ const dismantle = function (creep) {
   }
 
   return rc
+}
+
+const cancelConstructionSites = function (creep) {
+  // last resort measure
+  if (!creep.room.__no_spawn__) {
+    return ERR_NOT_FOUND
+  }
+
+  const targets = creep.room.find(FIND_CONSTRUCTION_SITES)
+
+  const canBeCancelled = _.filter(targets, x => x.structureType !== STRUCTURE_SPAWN)
+
+  const inRange = _.filter(canBeCancelled, x => x.pos.isNearTo(creep))
+  if (inRange.length === 0) {
+    return ERR_NOT_FOUND
+  }
+
+  let cancelled = false
+  for (const constructionSite of inRange) {
+    // will potentially release some energy
+    const rc = constructionSite.remove()
+    cancelled = cancelled || rc === OK
+  }
+
+  return cancelled ? OK : ERR_BUSY
 }
 
 const getCreepByFlagName = function (flagName) {
