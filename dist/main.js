@@ -840,13 +840,27 @@ Room.prototype.buildFromPlan = function () {
   const plan = this.memory.plan
   if (plan === undefined) return
 
+  let structures
+
   for (let i = 0; i < plan.length; ++i) {
     const code = plan.charCodeAt(i)
     const [position, structureType] = Structure.prototype.decode(code)
     if (structureType === undefined) continue
 
-    // don't spam
-    if (this.__no_spawn__ && structureType !== STRUCTURE_SPAWN) continue
+    if (this.__no_spawn__) {
+      if (structureType !== STRUCTURE_SPAWN) continue
+
+      if (structures === undefined) {
+        structures = this.find(FIND_STRUCTURES)
+      }
+
+      const atXY = _.filter(structures, x => x.pos.isEqualTo(position.x, position.y))
+      for (const structure of atXY) {
+        if (_.some(OBSTACLE_OBJECT_TYPES, _.matches(structure.structureType))) {
+          structure.destroy()
+        }
+      }
+    }
 
     this.createConstructionSite(position.x, position.y, structureType)
   }
