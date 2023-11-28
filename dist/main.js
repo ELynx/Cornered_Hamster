@@ -29,6 +29,15 @@ const controlCreeps = function () {
 const work = function (creep) {
   if (creep === undefined) return ERR_INVALID_TARGET
 
+  if (creep.room.controller && creep.room.controller.my && creep.room.__no_spawn__ === undefined) {
+    const structures = creep.room.find(FIND_STRUCTURES)
+    creep.room.__no_spawn__ = !_.some(structures, _.matchesProperty('structureType', STRUCTURE_SPAWN))
+
+    if (creep.room.__no_spawn__) {
+      creep.say('Panik', true)
+    }
+  }
+
   creep.__work__ = creep.getActiveBodyparts(WORK)
 
   signController(creep)
@@ -117,6 +126,10 @@ const grabEnergy = function (creep) {
 }
 
 const upgradeController = function (creep) {
+  if (creep.room.__no_spawn__) {
+    return ERR_NOT_ENOUGH_RESOURCES
+  }
+
   const target = creep.room.controller
 
   if (!target) {
@@ -131,6 +144,10 @@ const upgradeController = function (creep) {
 }
 
 const restock = function (creep) {
+  if (creep.room.__no_spawn__) {
+    return ERR_NOT_ENOUGH_RESOURCES
+  }
+
   const targets = creep.room.find(FIND_STRUCTURES)
 
   const withEnergyDemand = _.filter(targets, x => (x.store && x.store.getFreeCapacity(RESOURCE_ENERGY) > 0))
@@ -144,6 +161,10 @@ const restock = function (creep) {
 }
 
 const repair = function (creep) {
+  if (creep.room.__no_spawn__) {
+    return ERR_NOT_ENOUGH_RESOURCES
+  }
+
   if (creep.__pipeline_1__ && creep.__pipeline_1__ > 4) {
     return ERR_BUSY
   }
@@ -178,7 +199,14 @@ const build = function (creep) {
     return gateRc
   }
 
-  const targets = creep.room.find(FIND_CONSTRUCTION_SITES)
+  let targets = creep.room.find(FIND_CONSTRUCTION_SITES)
+
+  if (creep.room.__no_spawn__) {
+    targets = _.filter(targets, _.matchesProperty('structureType', STRUCTURE_SPAWN))
+    targets = _.sortByOrder(targets, ['progress'], ['desc'])
+    const target = _.first(targets)
+    targets = target ? [target] : []
+  }
 
   const inRange = _.filter(targets, x => x.pos.inRangeTo(creep, 3))
   if (inRange.length === 0) {
@@ -214,6 +242,10 @@ const harvest = function (creep) {
 }
 
 const dismantle = function (creep) {
+  if (!creep.room.__no_spawn__) {
+    return ERR_NOT_FOUND
+  }
+
   // last resort measure, do not override other intents
   if (creep.__pipeline_1__) {
     return ERR_BUSY
@@ -226,7 +258,9 @@ const dismantle = function (creep) {
     return ERR_BUSY
   }
 
-  const inRange = _.filter(targets, x => x.pos.isNearTo(creep))
+  const canBeDismantled = _.filter(targets, x => (CONSTRUCTION_COST[x.structureType] && x.hits && x.hitsMax))
+
+  const inRange = _.filter(canBeDismantled, x => x.pos.isNearTo(creep))
   if (inRange.length === 0) {
     return ERR_NOT_FOUND
   }
@@ -338,6 +372,20 @@ const getGrabTargets = function (room, what) {
           [LOOK_RESOURCES]: resource
         }
       )
+    }
+  }
+
+  if (room.__no_spawn__) {
+    const structures = room.find(FIND_STRUCTURES)
+    for (const structure of structures) {
+      if (structure.structureType !== STRUCTURE_NUKER && structure.store && structure.store.getUsedCapacity(RESOURCE_ENERGY) > 0) {
+        targets.push(
+          {
+            type: LOOK_RUINS, // compatible :)
+            [LOOK_RUINS]: structure
+          }
+        )
+      }
     }
   }
 
