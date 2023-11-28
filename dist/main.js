@@ -360,11 +360,6 @@ const getCreep = function (creepName, room, x, y) {
 }
 
 const getCreepXgate = function (room, x, y) {
-  // nope out
-  if (room.__invasion_npc__) {
-    return ERR_BUSY
-  }
-
   const terrain = room.getTerrain()
   const atXY = terrain.get(x, y)
 
@@ -542,6 +537,11 @@ const makeAlternativeName = function (name) {
 }
 
 const maybeSpawnCreep = function (name1, name2, room, x, y) {
+  // nope out
+  if (room.__invasion_npc__) {
+    return ERR_BUSY
+  }
+
   // if something is already spawning
   const creep1 = Game.creeps[name1]
   if (creep1 && creep1.spawning) {
@@ -819,10 +819,22 @@ const handleRoomState = function (room) {
     room.buildFromPlan()
   }
 
-  // TODO detect invasion and it's cause
-  room.__invasion__ = false
-  room.__invasion_pc__ = false
-  room.__invasion_npc__ = false
+  const hostiles = room.find(FIND_HOSTILE_CREEPS)
+  if (hostiles.length > 0) {
+    room.__invasion__ = true
+
+    for (const hosile of hostiles) {
+      const username = hosile.owner ? hosile.owner.username : undefined
+      const isNpc = _.some(NPC_USERNAMES, _.matches(username))
+      if (isNpc) {
+        room.__invasion_npc__ = true
+      } else {
+        room.__invasion_pc__ = true
+      }
+
+      if (room.__invasion_npc__ && room.__invasion_pc__) break
+    }
+  }
 
   // oops
   if (room.__no_spawn__ && room.__invasion__) {
