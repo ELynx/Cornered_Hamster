@@ -375,15 +375,17 @@ const getGrabTargets = function (room, what) {
   if (room.__no_spawn__ || balance) {
     const structures = room.find(FIND_STRUCTURES)
     for (const structure of structures) {
-      if (room.__no_spawn__) {
-        // no withdraw from nuker possible
-        if (structure.structureType === STRUCTURE_NUKER) continue
-      } else {
-        // balance === withdraw from containers
-        if (structure.structureType !== STRUCTURE_CONTAINER) continue
+      // no withdraw from nuker possible
+      if (structure.structureType === STRUCTURE_NUKER) continue
+
+      if (!room.__no_spawn_) {
+        if (balance) {
+          // withdraw from containers
+          if (structure.structureType !== STRUCTURE_CONTAINER) continue
+        }
       }
 
-      if (structure.store && structure.store.getUsedCapacity(RESOURCE_ENERGY) > 0) {
+      if (structure.store && structure.store.getUsedCapacity(what) > 0) {
         targets.push(
           {
             type: LOOK_RUINS, // compatible :)
