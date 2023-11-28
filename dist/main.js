@@ -38,6 +38,7 @@ const work = function (creep) {
   repair(creep)
   build(creep)
   harvest(creep)
+  dismantle(creep)
 }
 
 const signController = function (creep) {
@@ -199,6 +200,32 @@ const harvest = function (creep) {
   const rc = creep.harvest(_.sample(inRange))
   if (rc === OK) {
     creep.__pipeline_1__ = 1
+  }
+
+  return rc
+}
+
+const dismantle = function (creep) {
+  // last resort measure, do not override other intents
+  if (creep.__pipeline_1__) {
+    return ERR_BUSY
+  }
+
+  const targets = creep.room.find(FIND_STRUCTURES)
+
+  const hasSpawn = _.some(targets, _.matchesProperty('structureType', STRUCTURE_SPAWN))
+  if (hasSpawn) {
+    return ERR_BUSY
+  }
+
+  const inRange = _.filter(targets, x => x.pos.isNearTo(creep))
+  if (inRange.length === 0) {
+    return ERR_NOT_FOUND
+  }
+
+  const rc = creep.dismantle(_.sample(inRange))
+  if (rc === OK) {
+    creep.__pipeline_1__ = 5
   }
 
   return rc
