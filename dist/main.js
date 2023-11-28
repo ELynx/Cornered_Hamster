@@ -44,6 +44,10 @@ const work = function (creep) {
 const signController = function (creep) {
   const target = creep.room.controller
 
+  if (!target) {
+    return ERR_NOT_FOUND
+  }
+
   if (target.__signed__) {
     return OK
   }
@@ -114,6 +118,10 @@ const grabEnergy = function (creep) {
 
 const upgradeController = function (creep) {
   const target = creep.room.controller
+
+  if (!target) {
+    return ERR_NOT_FOUND
+  }
 
   if (target.pos.inRangeTo(creep, 3)) {
     return creep.upgradeController(target)
@@ -477,25 +485,25 @@ const makeBody = function (room) {
     return room.__make_body_cache__
   }
 
-  const energyForSpawn = roomEnergyCapacity(room)
-  if (energyForSpawn <= 0) return []
+  const [energy, capacity] = roomEnergyAndEnergyCapacity(room)
+  if (capacity <= 0) return []
 
   let body = [WORK, WORK, CARRY] // backup for 300 spawn trickle charge
 
-  if (energyForSpawn >= 350) {
+  if (capacity >= 350) {
     body = [WORK, WORK, WORK, CARRY]
   }
 
-  if (energyForSpawn >= 450) {
+  if (capacity >= 450) {
     body = [WORK, WORK, WORK, WORK, CARRY]
   }
 
   return (room.__make_body_cache__ = _.shuffle(body))
 }
 
-const roomEnergyCapacity = function (room) {
-  if (room.controller === undefined) return 0
-  if (room.controller.level < 1) return 0
+const roomEnergyAndEnergyCapacity = function (room) {
+  if (room.controller === undefined) return [0, 0]
+  if (room.controller.level < 1) return [0, 0]
 
   const structures = room.find(FIND_STRUCTURES)
 
@@ -506,7 +514,7 @@ const roomEnergyCapacity = function (room) {
   }
 
   // no spawn at all
-  if (spawns.length === 0) return 0
+  if (spawns.length === 0) return [0, 0]
 
   let extensions = _.filter(structures, _.matchesProperty('structureType', STRUCTURE_EXTENSION))
   // do expensive check only if sus
@@ -520,26 +528,33 @@ const roomEnergyCapacity = function (room) {
   // n.b. does not accout for power creeps
 
   const creepsInRoom = _.filter(Game.creeps, x => !x.spawning && x.room.name === room.name)
-  let total = 0
+  let energy = 0
+  let capacity = 0
 
   for (const spawn of spawns) {
+    const e = spawn.store.getUsedCapacity(RESOURCE_ENERGY)
+    energy += e
+
     if (_.some(creepsInRoom, x => x.pos.isNearTo(spawn))) {
       total += SPAWN_ENERGY_CAPACITY
     } else {
-      total += spawn.store.getUsedCapacity(RESOURCE_ENERGY)
+      total += e
     }
   }
 
   for (const extension of extensions) {
+    const e = extension.store.getUsedCapacity(RESOURCE_ENERGY)
+    energy += e
+
     if (_.some(creepsInRoom, x => x.pos.isNearTo(extension))) {
       total += EXTENSION_ENERGY_CAPACITY[room.controller.level]
     } else {
-      total += extension.store.getUsedCapacity(RESOURCE_ENERGY)
+      total += e
     }
   }
 
   // because trickle charge will fill at least to this level
-  return Math.max(total, SPAWN_ENERGY_CAPACITY)
+  return [energy, Math.max(capacity, SPAWN_ENERGY_CAPACITY)]
 }
 
 const processRoomEventLog = function (room) {
