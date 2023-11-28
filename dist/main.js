@@ -148,16 +148,9 @@ const restock = function (creep) {
     return ERR_NOT_ENOUGH_RESOURCES
   }
 
-  const targets = creep.room.find(FIND_STRUCTURES)
+  let targets = getRestockTargets(creep.room)
 
-  let withEnergyDemand = _.filter(targets, x => (x.store && x.store.getFreeCapacity(RESOURCE_ENERGY) > 0))
-
-  const balance = creep.room.find(FIND_SOURCES_ACTIVE).length === 0
-  if (balance) {
-    withEnergyDemand = _.filter(withEnergyDemand, x => x.structureType !== STRUCTURE_CONTAINER)
-  }
-
-  const inRange = _.filter(withEnergyDemand, x => x.pos.isNearTo(creep))
+  const inRange = _.filter(targets, x => x.pos.isNearTo(creep))
   if (inRange.length === 0) {
     return ERR_NOT_FOUND
   }
@@ -247,21 +240,17 @@ const harvest = function (creep) {
 }
 
 const dismantle = function (creep) {
+  // last resort measure
   if (!creep.room.__no_spawn__) {
     return ERR_NOT_FOUND
   }
 
-  // last resort measure, do not override other intents
+  // do not override other intents in pipeline, they are more useful
   if (creep.__pipeline_1__) {
     return ERR_BUSY
   }
 
   const targets = creep.room.find(FIND_STRUCTURES)
-
-  const hasSpawn = _.some(targets, _.matchesProperty('structureType', STRUCTURE_SPAWN))
-  if (hasSpawn) {
-    return ERR_BUSY
-  }
 
   const canBeDismantled = _.filter(targets, x => (CONSTRUCTION_COST[x.structureType] && x.hits && x.hitsMax))
 
@@ -412,12 +401,30 @@ const getGrabTargets = function (room, what) {
   return (room.__grab_target_cache__[what] = targets)
 }
 
+const getRestockTargets = function (room) {
+  if (room.__restock_target_cache__) {
+    return room.__repair_target_cache__
+  }
+
+  const structures = room.find(FIND_STRUCTURES)
+
+  let withEnergyDemand = _.filter(structures, x => (x.store && x.store.getFreeCapacity(RESOURCE_ENERGY) > 0))
+
+  const balance = room.find(FIND_SOURCES_ACTIVE).length === 0
+  if (balance) {
+    withEnergyDemand = _.filter(withEnergyDemand, x => x.structureType !== STRUCTURE_CONTAINER)
+  }
+
+  return (room.__restock_target_cache__ = withEnergyDemand)
+}
+
 const creepXenergyXgate = function (creep, intentPower) {
   // how much (max) energy intent will spend
   const energyToPower = creep.__work__ * intentPower
   // upgrade controller is attempted every tick, and does not interfere with pipeline 1
   // keep enough energy to perform upgrade + intent this tick and upgrade + harvest next
-  const energySpentOnUpgradeController = creep.__work__ * UPGRADE_CONTROLLER_POWER * 2
+  // when there is no spawn, to upgrade is performent, just optimize the intent number
+  const energySpentOnUpgradeController = creep.room.__no_spawn__ ? 0 : creep.__work__ * UPGRADE_CONTROLLER_POWER * 2
   // keep in mind that some power levels are not reachable
   const energyMax = creep.store.getCapacity()
   // do not fire intent below this level
