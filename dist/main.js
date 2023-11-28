@@ -685,6 +685,7 @@ const handleEventAttack = function (room, eventRecord) {
   const isNpcAttack = _.some(NPC_USERNAMES, _.matches(attacker.owner.username))
 
   if (isNpcAttack) {
+    // actually Invader will not attack spawn, but still
     if (target.structureType && target.structureType === STRUCTURE_SPAWN) {
       activateSafeMode(room)
     }
