@@ -293,6 +293,10 @@ const cancelConstructionSites = function (creep) {
 }
 
 const handleInvasion = function (creep) {
+  if (room.__no_spawn__) {
+    return ERR_BUSY
+  }
+
   if (creep.room.__invasion_npc__) {
     const structures = creep.room.find(FIND_STRUCTURES)
 
