@@ -1,6 +1,7 @@
 console.log('Code loaded')
 
 const CONTROLLER_SIGN_TEXT = 'https://github.com/ELynx/Cornered_Hamster'
+const forcedControllerSign = true // once in code load force the sign, it is visible on new world map
 
 module.exports.loop = function () {
   processRoomEventLogs() // first because activates safe mode
@@ -52,13 +53,17 @@ const signController = function (creep) {
     rc = OK // do not bother with all if-else
 
     if (target.sign) {
-      if (target.sign.username !== SYSTEM_USERNAME) {
+      if (target.sign.username !== SYSTEM_USERNAME || forcedControllerSign) {
         if (target.sign.text !== CONTROLLER_SIGN_TEXT || target.sign.username !== creep.owner.username) {
           // this has potential to loop over and over when text sanitation or uncaught forced marker is there
           console.log('Controller signature was ' + target.sign.text)
           console.log('Controller signature set ' + CONTROLLER_SIGN_TEXT)
           rc = creep.signController(target, CONTROLLER_SIGN_TEXT)
           console.log('Result is ' + rc)
+
+          if (target.sign.username === SYSTEM_USERNAME) {
+            forcedControllerSign = false
+          }
         }
       }
     } else {
