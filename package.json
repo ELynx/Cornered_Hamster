@@ -13,6 +13,7 @@
       "CARRY",
       "CONSTRUCTION_COST",
       "CONTROLLER_STRUCTURES",
+      "CREEP_LIFE_TIME",
       "CREEP_SPAWN_TIME",
       "ERR_BUSY",
       "ERR_INVALID_TARGET",

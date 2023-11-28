@@ -5,7 +5,7 @@ let forcedControllerSign = true // once in code load force the sign, it is visib
 
 module.exports.loop = function () {
   processRoomEventLogs() // first because activates safe mode
-  handleRoomStates()
+  handleRoomStates() // second because set flags used in other code
   controlCreeps()
   performAutobuild()
   generatePixel()
@@ -376,7 +376,7 @@ const getGrabTargets = function (room, what) {
       // no withdraw from nuker possible
       if (structure.structureType === STRUCTURE_NUKER) continue
 
-      if (!room.__no_spawn_) {
+      if (!room.__no_spawn__) {
         if (balance) {
           // withdraw from containers
           if (structure.structureType !== STRUCTURE_CONTAINER) continue
@@ -403,7 +403,7 @@ const getGrabTargets = function (room, what) {
 
 const getRestockTargets = function (room, what) {
   if (room.__restock_target_cache__) {
-    return room.__repair_target_cache__
+    return room.__restock_target_cache__
   }
 
   const structures = room.find(FIND_STRUCTURES)
@@ -507,15 +507,14 @@ const maybeSpawnCreep = function (name1, name2, room, x, y) {
     return ERR_NOT_ENOUGH_RESOURCES
   }
 
-  // penalty for absent container
+  // penalty for walling
   if (room.getTerrain().get(x, y) === TERRAIN_MASK_WALL) {
     // remove 1st element
     body = _.rest(body)
   }
 
   // by default, give 1st name
-  let creepName = name1
-  const otherCreepName = name2
+  const creepName = creep ? (creep.name === name1 ? name2 : name1) : name1
 
   // check if creep with enough life exists
   if (creep) {
@@ -523,11 +522,6 @@ const maybeSpawnCreep = function (name1, name2, room, x, y) {
     // experimentally tested to be this operator
     if (creep.ticksToLive >= ticksToSpawn) {
       return OK
-    }
-
-    // swap creep names
-    if (creep.name === creepName) {
-      creepName = otherCreepName
     }
   }
 
@@ -572,7 +566,7 @@ const makeBody = function (room) {
   const [energy, capacity] = roomEnergyAndEnergyCapacity(room)
   if (capacity <= 0) return []
 
-  // n.b. WORK must be first, to properly penalize creep on wall
+  // n.b. WORK must be first, to properly penalize
 
   let body = [WORK, WORK, CARRY] // backup for 300 spawn trickle charge
 
@@ -742,7 +736,7 @@ const activateSafeMode = function (room) {
   const rc = target.activateSafeMode()
 
   // signal successful intent to following code
-  room.__safe_mode_activated__ = rc === OK
+  room.__safe_mode_active__ = rc === OK
 
   const message = 'Attempting to activate safe mode at room ' + room.name + ' with rc ' + rc
   console.log(message)
@@ -752,9 +746,37 @@ const activateSafeMode = function (room) {
 }
 
 const handleRoomState = function (room) {
-  if (room.controller && room.controller.my && room.__no_spawn__ === undefined) {
-    const structures = room.find(FIND_STRUCTURES)
-    room.__no_spawn__ = !_.some(structures, _.matchesProperty('structureType', STRUCTURE_SPAWN))
+  if (room.controller === undefined) return
+  if (!room.controller.my) return
+
+  // detect and handle no spawn state
+  const structures = room.find(FIND_STRUCTURES)
+  room.__no_spawn__ = !_.some(structures, _.matchesProperty('structureType', STRUCTURE_SPAWN))
+
+  if (room.__no_spawn__) {
+    room.buildFromPlan()
+  }
+
+  // TODO detect invasion and it's cause
+  room.__invasion__ = false
+  room.__invasion_pc__ = false
+  room.__invasion_npc__ = false
+
+  // oops
+  if (room.__no_spawn__ && room.__invasion__) {
+    activateSafeMode(room)
+  }
+
+  // detect ongoing safe mode
+  if (room.controller.safeMode) {
+    room.__safe_mode_active__ = true
+  }
+
+  // cancel out invasion
+  if (room.__safe_mode_active__) {
+    room.__invasion__ = false
+    room.__invasion_pc__ = false
+    room.__invasion_npc__ = false
   }
 }
 
@@ -778,7 +800,8 @@ const performAutobuild = function () {
     return
   }
 
-  if (Game.time % 100 === 0) {
+  // when Invader died :)
+  if (Game.time % CREEP_LIFE_TIME === 0) {
     for (const roomName in Game.rooms) {
       Game.rooms[roomName].buildFromPlan()
     }
@@ -821,6 +844,9 @@ Room.prototype.buildFromPlan = function () {
     const code = plan.charCodeAt(i)
     const [position, structureType] = Structure.prototype.decode(code)
     if (structureType === undefined) continue
+
+    // don't spam
+    if (this.__no_spawn__ && structureType !== STRUCTURE_SPAWN) continue
 
     this.createConstructionSite(position.x, position.y, structureType)
   }
