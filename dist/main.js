@@ -43,7 +43,7 @@ const work = function (creep) {
   signController(creep)
   grabEnergy(creep)
   upgradeController(creep)
-  restock(creep)
+  restockEnergy(creep)
   repair(creep)
   build(creep)
   harvest(creep)
@@ -143,12 +143,12 @@ const upgradeController = function (creep) {
   return ERR_NOT_IN_RANGE
 }
 
-const restock = function (creep) {
+const restockEnergy = function (creep) {
   if (creep.room.__no_spawn__) {
     return ERR_NOT_ENOUGH_RESOURCES
   }
 
-  let targets = getRestockTargets(creep.room)
+  let targets = getRestockTargets(creep.room, RESOURCE_ENERGY)
 
   const inRange = _.filter(targets, x => x.pos.isNearTo(creep))
   if (inRange.length === 0) {
@@ -403,21 +403,21 @@ const getGrabTargets = function (room, what) {
   return (room.__grab_target_cache__[what] = targets)
 }
 
-const getRestockTargets = function (room) {
+const getRestockTargets = function (room, what) {
   if (room.__restock_target_cache__) {
     return room.__repair_target_cache__
   }
 
   const structures = room.find(FIND_STRUCTURES)
 
-  let withEnergyDemand = _.filter(structures, x => (x.store && x.store.getFreeCapacity(RESOURCE_ENERGY) > 0))
+  let withDemand = _.filter(structures, x => (x.store && x.store.getFreeCapacity(what) > 0))
 
   const balance = room.find(FIND_SOURCES_ACTIVE).length === 0
   if (balance) {
-    withEnergyDemand = _.filter(withEnergyDemand, x => x.structureType !== STRUCTURE_CONTAINER)
+    withDemand = _.filter(withDemand, x => x.structureType !== STRUCTURE_CONTAINER)
   }
 
-  return (room.__restock_target_cache__ = withEnergyDemand)
+  return (room.__restock_target_cache__ = withDemand)
 }
 
 const creepXenergyXgate = function (creep, intentPower) {
