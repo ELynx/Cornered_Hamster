@@ -150,7 +150,12 @@ const restock = function (creep) {
 
   const targets = creep.room.find(FIND_STRUCTURES)
 
-  const withEnergyDemand = _.filter(targets, x => (x.store && x.store.getFreeCapacity(RESOURCE_ENERGY) > 0))
+  let withEnergyDemand = _.filter(targets, x => (x.store && x.store.getFreeCapacity(RESOURCE_ENERGY) > 0))
+
+  const balance = room.find(FIND_SOURCES_ACTIVE).length === 0
+  if (balance) {
+    withEnergyDemand = _.filter(withEnergyDemand, x => x.structureType !== STRUCTURE_CONTAINER)
+  }
 
   const inRange = _.filter(withEnergyDemand, x => x.pos.isNearTo(creep))
   if (inRange.length === 0) {
@@ -375,10 +380,21 @@ const getGrabTargets = function (room, what) {
     }
   }
 
-  if (room.__no_spawn__) {
+  // RANDOM BULLSHIT GO!!!!
+  const balance = room.find(FIND_SOURCES_ACTIVE).length === 0
+
+  if (room.__no_spawn__ || balance) {
     const structures = room.find(FIND_STRUCTURES)
     for (const structure of structures) {
-      if (structure.structureType !== STRUCTURE_NUKER && structure.store && structure.store.getUsedCapacity(RESOURCE_ENERGY) > 0) {
+      if (room.__no_spawn__) {
+        // no withdraw from nuker possible
+        if (structure.structureType === STRUCTURE_NUKER) continue
+      } else {
+        // balance === withdraw from containers
+        if (structure.structureType !== STRUCTURE_CONTAINER) continue
+      }
+
+      if (structure.store && structure.store.getUsedCapacity(RESOURCE_ENERGY) > 0) {
         targets.push(
           {
             type: LOOK_RUINS, // compatible :)
