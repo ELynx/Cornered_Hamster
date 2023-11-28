@@ -533,6 +533,7 @@ const makeBody = function (room) {
     return room.__make_body_cache__
   }
 
+  // eslint-disable-next-line no-unused-vars
   const [energy, capacity] = roomEnergyAndEnergyCapacity(room)
   if (capacity <= 0) return []
 
@@ -584,9 +585,9 @@ const roomEnergyAndEnergyCapacity = function (room) {
     energy += e
 
     if (_.some(creepsInRoom, x => x.pos.isNearTo(spawn))) {
-      total += SPAWN_ENERGY_CAPACITY
+      capacity += SPAWN_ENERGY_CAPACITY
     } else {
-      total += e
+      capacity += e
     }
   }
 
@@ -595,9 +596,9 @@ const roomEnergyAndEnergyCapacity = function (room) {
     energy += e
 
     if (_.some(creepsInRoom, x => x.pos.isNearTo(extension))) {
-      total += EXTENSION_ENERGY_CAPACITY[room.controller.level]
+      capacity += EXTENSION_ENERGY_CAPACITY[room.controller.level]
     } else {
-      total += e
+      capacity += e
     }
   }
 
