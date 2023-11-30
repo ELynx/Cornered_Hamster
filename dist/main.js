@@ -148,7 +148,7 @@ const restockEnergy = function (creep) {
     return ERR_NOT_ENOUGH_RESOURCES
   }
 
-  let targets = getRestockTargets(creep.room, RESOURCE_ENERGY)
+  const targets = getRestockTargets(creep.room, RESOURCE_ENERGY)
 
   const inRange = _.filter(targets, x => x.pos.isNearTo(creep))
   if (inRange.length === 0) {
@@ -520,14 +520,14 @@ const getRepairTargets = function (room) {
 
 const makeAlternativeName = function (name) {
   const alternativeName = name
-  .replace(/a/g, 'ä')
-  .replace(/а/g, 'ä')
-  .replace(/o/g, 'ö')
-  .replace(/о/g, 'ö')
-  .replace(/u/g, 'ü')
-  .replace(/и/g, 'й')
-  .replace(/e/g, 'ё')
-  .replace(/е/g, 'ё')
+    .replace(/a/g, 'ä')
+    .replace(/а/g, 'ä')
+    .replace(/o/g, 'ö')
+    .replace(/о/g, 'ö')
+    .replace(/u/g, 'ü')
+    .replace(/и/g, 'й')
+    .replace(/e/g, 'ё')
+    .replace(/е/g, 'ё')
 
   if (alternativeName === name) {
     return name + '_twin'
