@@ -366,7 +366,7 @@ const getCreep = function (creepName, room, x, y) {
 const getCreepXgate = function (room, x, y) {
   const structures = room.find(FIND_STRUCTURES)
 
-  const structuresAtXY = _.filter(structures, x => x.pos.isEqualTo(x, y))
+  const structuresAtXY = _.filter(structures, s => s.pos.isEqualTo(x, y))
 
   // do not spawn into obstacle
   for (const structure of structuresAtXY) {
