@@ -400,6 +400,7 @@ const getGrabTargets = function (room, what) {
   const tombstones = room.find(FIND_TOMBSTONES)
   const ruins = room.find(FIND_RUINS)
   const resources = room.find(FIND_DROPPED_RESOURCES)
+  const structures = room.find(FIND_STRUCTURES)
 
   const targets = []
 
@@ -436,30 +437,21 @@ const getGrabTargets = function (room, what) {
     }
   }
 
-  // RANDOM BULLSHIT GO!!!!
-  const balance = room.find(FIND_SOURCES_ACTIVE).length === 0
+  for (const structure of structures) {
+    // no withdraw from nuker possible
+    if (structure.structureType === STRUCTURE_NUKER) continue
 
-  if (room.__no_spawn__ || balance) {
-    const structures = room.find(FIND_STRUCTURES)
-    for (const structure of structures) {
-      // no withdraw from nuker possible
-      if (structure.structureType === STRUCTURE_NUKER) continue
+    if (!room.__no_spawn__) {
+      if (structure.structureType !== STRUCTURE_CONTAINER) continue
+    }
 
-      if (!room.__no_spawn__) {
-        if (balance) {
-          // withdraw from containers
-          if (structure.structureType !== STRUCTURE_CONTAINER) continue
+    if (structure.store && structure.store.getUsedCapacity(what) > 0) {
+      targets.push(
+        {
+          type: LOOK_RUINS, // compatible :)
+          [LOOK_RUINS]: structure
         }
-      }
-
-      if (structure.store && structure.store.getUsedCapacity(what) > 0) {
-        targets.push(
-          {
-            type: LOOK_RUINS, // compatible :)
-            [LOOK_RUINS]: structure
-          }
-        )
-      }
+      )
     }
   }
 
@@ -477,12 +469,7 @@ const getRestockTargets = function (room, what) {
 
   const structures = room.find(FIND_STRUCTURES)
 
-  let withDemand = _.filter(structures, x => (x.store && x.store.getFreeCapacity(what) > 0))
-
-  const balance = room.find(FIND_SOURCES_ACTIVE).length === 0
-  if (balance) {
-    withDemand = _.filter(withDemand, x => x.structureType !== STRUCTURE_CONTAINER)
-  }
+  const withDemand = _.filter(structures, x => (x.structureType !== STRUCTURE_CONTAINER && x.store && x.store.getFreeCapacity(what) > 0))
 
   return (room.__restock_target_cache__ = withDemand)
 }
