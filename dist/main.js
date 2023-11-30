@@ -653,6 +653,10 @@ const makeBody = function (room) {
     body = [WORK, WORK, WORK, WORK, CARRY]
   }
 
+  if (capacity >= 550) {
+    body = [WORK, WORK, WORK, WORK, WORK, CARRY]
+  }
+
   return (room.__make_body_cache__ = body)
 }
 
