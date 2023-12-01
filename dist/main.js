@@ -94,7 +94,21 @@ const signController = function (creep) {
 }
 
 const getBoosted = function (creep) {
-  return OK
+  if (creep.room.__no_spawn__) {
+    return ERR_NOT_ENOUGH_RESOURCES
+  }
+
+  const structures = creep.room.find(FIND_STRUCTURES)
+
+  const labs = _.filter(structures, s => s.structureType === STRUCTURE_LAB)
+
+  const inRange = _.filter(labs, s => s.pos.isNearTo(creep))
+  if (inRange.length === 0) {
+    return ERR_NOT_FOUND
+  }
+
+  // keep doing it
+  return _.sample(inRange).boostCreep(creep)
 }
 
 const grabEnergy = function (creep) {
