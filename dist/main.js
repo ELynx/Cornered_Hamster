@@ -480,7 +480,8 @@ const getGrabTargets = function (room, what) {
     if (structure.structureType === STRUCTURE_NUKER) continue
 
     if (!room.__no_spawn__) {
-      if (structure.structureType !== STRUCTURE_CONTAINER) continue
+      if (structure.structureType !== STRUCTURE_CONTAINER &&
+          structure.structureType !== STRUCTURE_TERMINAL) continue
     }
 
     if (structure.store && structure.store.getUsedCapacity(what) > 0) {
