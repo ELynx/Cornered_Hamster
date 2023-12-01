@@ -39,6 +39,7 @@ const work = function (creep) {
   creep.__work__ = creep.getActiveBodyparts(WORK)
 
   signController(creep)
+  getBoosted(creep)
   grabEnergy(creep)
   upgradeController(creep)
   restockEnergy(creep)
@@ -90,6 +91,10 @@ const signController = function (creep) {
   }
 
   return rc
+}
+
+const getBoosted = function (creep) {
+  return OK
 }
 
 const grabEnergy = function (creep) {
