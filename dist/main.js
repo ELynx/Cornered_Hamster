@@ -37,6 +37,7 @@ const work = function (creep) {
   if (creep === undefined) return ERR_INVALID_TARGET
 
   creep.__work__ = creep.getActiveBodyparts(WORK)
+  creep.__legs__ = creep.getActiveBodyparts(MOVE)
 
   signController(creep)
   getBoosted(creep)
@@ -49,6 +50,7 @@ const work = function (creep) {
   dismantle(creep)
   cancelConstructionSites(creep)
   handleInvasion(creep)
+  moveAround(creep)
 }
 
 const signController = function (creep) {
@@ -314,6 +316,19 @@ const handleInvasion = function (creep) {
   }
 
   return ERR_BUSY
+}
+
+const moveAround = function (creep) {
+  if (!creep.__legs__) {
+    return ERR_INVALID_TARGET
+  }
+
+  // TODO path
+  // TODO look ahead
+  creep.move(BOTTOM_LEFT)
+  creep.move(BOTTOM)
+
+  return OK
 }
 
 const getCreepByFlagName = function (flagName) {
@@ -665,6 +680,10 @@ const makeBody = function (room) {
 
   if (capacity >= 550) {
     body = [WORK, WORK, WORK, WORK, WORK, CARRY]
+  }
+
+  if (capacity >= 900) {
+    body = [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE]
   }
 
   return (room.__make_body_cache__ = body)
