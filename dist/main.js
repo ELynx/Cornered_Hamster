@@ -93,36 +93,7 @@ const signController = function (creep) {
 }
 
 const grabEnergy = function (creep) {
-  const targets = getGrabTargets(creep.room, RESOURCE_ENERGY)
-
-  let didWithdraw = false
-  let didPickup = false
-
-  for (const target of targets) {
-    const from = target[target.type]
-
-    if (!from.pos.isNearTo(creep)) continue
-
-    if ((didWithdraw === false) && (target.type === LOOK_TOMBSTONES || target.type === LOOK_RUINS)) {
-      const rc = creep.withdraw(from, RESOURCE_ENERGY)
-      if (rc === OK) {
-        didWithdraw = true
-      }
-    }
-
-    if (didPickup === false && target.type === LOOK_RESOURCES) {
-      const rc = creep.pickup(from)
-      if (rc === OK) {
-        didPickup = true
-      }
-    }
-
-    if (didWithdraw && didPickup) break
-  }
-
-  if (didWithdraw || didPickup) return OK
-
-  return ERR_NOT_FOUND
+  return grab(creep, RESOURCE_ENERGY)
 }
 
 const upgradeController = function (creep) {
@@ -390,6 +361,39 @@ const getCreepXgate = function (room, x, y) {
   }
 
   return OK
+}
+
+const grab = function (creep, what) {
+  const targets = getGrabTargets(creep.room, what)
+
+  let didWithdraw = false
+  let didPickup = false
+
+  for (const target of targets) {
+    const from = target[target.type]
+
+    if (!from.pos.isNearTo(creep)) continue
+
+    if ((didWithdraw === false) && (target.type === LOOK_TOMBSTONES || target.type === LOOK_RUINS)) {
+      const rc = creep.withdraw(from, what)
+      if (rc === OK) {
+        didWithdraw = true
+      }
+    }
+
+    if (didPickup === false && target.type === LOOK_RESOURCES) {
+      const rc = creep.pickup(from)
+      if (rc === OK) {
+        didPickup = true
+      }
+    }
+
+    if (didWithdraw && didPickup) break
+  }
+
+  if (didWithdraw || didPickup) return OK
+
+  return ERR_NOT_FOUND
 }
 
 const getGrabTargets = function (room, what) {
