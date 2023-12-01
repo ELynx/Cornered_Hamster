@@ -508,7 +508,9 @@ const getRestockTargets = function (room, what) {
 
   const structures = room.find(FIND_STRUCTURES)
 
-  const withDemand = _.filter(structures, s => (s.structureType !== STRUCTURE_CONTAINER && s.store && s.store.getFreeCapacity(what) > 0))
+  const destinationStructures = _.filter(structures, s => s.structureType !== STRUCTURE_CONTAINER && s.structureType !== STRUCTURE_TERMINAL)
+
+  const withDemand = _.filter(destinationStructures, s => (s.store && s.store.getFreeCapacity(what) > 0))
 
   if (room.__restock_target_cache__ === undefined) {
     room.__restock_target_cache__ = { }
