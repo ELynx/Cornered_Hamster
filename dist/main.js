@@ -502,15 +502,19 @@ const getGrabTargets = function (room, what) {
 }
 
 const getRestockTargets = function (room, what) {
-  if (room.__restock_target_cache__) {
-    return room.__restock_target_cache__
+  if (room.__restock_target_cache__ && room.__restock_target_cache__[what]) {
+    return room.__restock_target_cache__[what]
   }
 
   const structures = room.find(FIND_STRUCTURES)
 
   const withDemand = _.filter(structures, s => (s.structureType !== STRUCTURE_CONTAINER && s.store && s.store.getFreeCapacity(what) > 0))
 
-  return (room.__restock_target_cache__ = withDemand)
+  if (room.__restock_target_cache__ === undefined) {
+    room.__restock_target_cache__ = { }
+  }
+
+  return (room.__restock_target_cache__[what] = withDemand)
 }
 
 const creepXenergyXgate = function (creep, intentPower) {
