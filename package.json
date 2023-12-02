@@ -9,6 +9,8 @@
     "globals": [
       "_",
       "BODYPART_COST",
+      "BOTTOM_LEFT",
+      "BOTTOM",
       "BUILD_POWER",
       "CARRY",
       "CONSTRUCTION_COST",
@@ -37,6 +39,7 @@
       "LOOK_RUINS",
       "LOOK_TOMBSTONES",
       "Memory",
+      "MOVE",
       "OBSTACLE_OBJECT_TYPES",
       "OK",
       "REPAIR_COST",
