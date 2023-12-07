@@ -513,7 +513,7 @@ const getRepairTargets = function (room) {
 
   const shouldBeRepaired = _.filter(canBeRepaired, x => (x.structureType !== STRUCTURE_RAMPART || x.hits < rampartThreshold))
 
-  const mineOrNeutral = _.filter(shouldBeRepaired, x => (x.my || true))
+  const mineOrNeutral = _.filter(shouldBeRepaired, x => (x.my ?? true))
 
   return (room.__repair_target_cache__ = mineOrNeutral)
 }
