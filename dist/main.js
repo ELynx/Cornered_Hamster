@@ -296,10 +296,10 @@ const handleInvasion = function (creep) {
 
     const spawns = _.filter(
       structures,
-      function (structure) {
-        if (structure.structureType !== STRUCTURE_SPAWN) return false
-        if (structure.spawning || structure.__spawned_this_tick__) return false
-        return !structure.__recycled_this_tick__
+      (s) => {
+        if (s.structureType !== STRUCTURE_SPAWN) return false
+        if (s.spawning || s.__spawned_this_tick__) return false
+        return !s.__recycled_this_tick__
       }
     )
 
