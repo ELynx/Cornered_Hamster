@@ -766,6 +766,8 @@ const processRoomEventLog = function (room) {
       case EVENT_ATTACK:
         handleEventAttack(room, eventRecord)
         break
+      default:
+        break
     }
   }
 }
