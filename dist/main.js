@@ -502,7 +502,7 @@ const getGrabTargets = function (room, what) {
 }
 
 const getRestockTargets = function (room, what) {
-  if (room.__restock_target_cache__ && room.__restock_target_cache__[what]) {
+  if (room.__restock_target_cache__?.[what]) {
     return room.__restock_target_cache__[what]
   }
 
