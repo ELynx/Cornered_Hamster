@@ -37,8 +37,10 @@ const work = function (creep) {
   if (creep === undefined) return ERR_INVALID_TARGET
 
   creep.__work__ = creep.getActiveBodyparts(WORK)
+  creep.__legs__ = creep.getActiveBodyparts(MOVE)
 
   signController(creep)
+  getBoosted(creep)
   grabEnergy(creep)
   upgradeController(creep)
   restockEnergy(creep)
@@ -48,6 +50,7 @@ const work = function (creep) {
   dismantle(creep)
   cancelConstructionSites(creep)
   handleInvasion(creep)
+  moveAround(creep)
 }
 
 const signController = function (creep) {
@@ -92,37 +95,26 @@ const signController = function (creep) {
   return rc
 }
 
-const grabEnergy = function (creep) {
-  const targets = getGrabTargets(creep.room, RESOURCE_ENERGY)
-
-  let didWithdraw = false
-  let didPickup = false
-
-  for (const target of targets) {
-    const from = target[target.type]
-
-    if (!from.pos.isNearTo(creep)) continue
-
-    if ((didWithdraw === false) && (target.type === LOOK_TOMBSTONES || target.type === LOOK_RUINS)) {
-      const rc = creep.withdraw(from, RESOURCE_ENERGY)
-      if (rc === OK) {
-        didWithdraw = true
-      }
-    }
-
-    if (didPickup === false && target.type === LOOK_RESOURCES) {
-      const rc = creep.pickup(from)
-      if (rc === OK) {
-        didPickup = true
-      }
-    }
-
-    if (didWithdraw && didPickup) break
+const getBoosted = function (creep) {
+  if (creep.room.__no_spawn__) {
+    return ERR_NOT_ENOUGH_RESOURCES
   }
 
-  if (didWithdraw || didPickup) return OK
+  const structures = creep.room.find(FIND_STRUCTURES)
 
-  return ERR_NOT_FOUND
+  const labs = _.filter(structures, s => s.structureType === STRUCTURE_LAB)
+
+  const inRange = _.filter(labs, s => s.pos.isNearTo(creep))
+  if (inRange.length === 0) {
+    return ERR_NOT_FOUND
+  }
+
+  // keep doing it
+  return _.sample(inRange).boostCreep(creep)
+}
+
+const grabEnergy = function (creep) {
+  return grab(creep, RESOURCE_ENERGY)
 }
 
 const upgradeController = function (creep) {
@@ -150,7 +142,7 @@ const restockEnergy = function (creep) {
 
   const targets = getRestockTargets(creep.room, RESOURCE_ENERGY)
 
-  const inRange = _.filter(targets, x => x.pos.isNearTo(creep))
+  const inRange = _.filter(targets, s => s.pos.isNearTo(creep))
   if (inRange.length === 0) {
     return ERR_NOT_FOUND
   }
@@ -174,7 +166,7 @@ const repair = function (creep) {
 
   const targets = getRepairTargets(creep.room)
 
-  const inRange = _.filter(targets, x => x.pos.inRangeTo(creep, 3))
+  const inRange = _.filter(targets, s => s.pos.inRangeTo(creep, 3))
   if (inRange.length === 0) {
     return ERR_NOT_FOUND
   }
@@ -206,7 +198,7 @@ const build = function (creep) {
     targets = target ? [target] : []
   }
 
-  const inRange = _.filter(targets, x => x.pos.inRangeTo(creep, 3))
+  const inRange = _.filter(targets, s => s.pos.inRangeTo(creep, 3))
   if (inRange.length === 0) {
     return ERR_NOT_FOUND
   }
@@ -226,7 +218,7 @@ const harvest = function (creep) {
 
   const targets = creep.room.find(FIND_SOURCES_ACTIVE)
 
-  const inRange = _.filter(targets, x => x.pos.isNearTo(creep))
+  const inRange = _.filter(targets, s => s.pos.isNearTo(creep))
   if (inRange.length === 0) {
     return ERR_NOT_FOUND
   }
@@ -252,9 +244,9 @@ const dismantle = function (creep) {
 
   const targets = creep.room.find(FIND_STRUCTURES)
 
-  const canBeDismantled = _.filter(targets, x => (CONSTRUCTION_COST[x.structureType] && x.hits && x.hitsMax))
+  const canBeDismantled = _.filter(targets, s => (CONSTRUCTION_COST[s.structureType] && s.hits && s.hitsMax))
 
-  const inRange = _.filter(canBeDismantled, x => x.pos.isNearTo(creep))
+  const inRange = _.filter(canBeDismantled, s => s.pos.isNearTo(creep))
   if (inRange.length === 0) {
     return ERR_NOT_FOUND
   }
@@ -275,9 +267,9 @@ const cancelConstructionSites = function (creep) {
 
   const targets = creep.room.find(FIND_CONSTRUCTION_SITES)
 
-  const canBeCancelled = _.filter(targets, x => x.structureType !== STRUCTURE_SPAWN)
+  const canBeCancelled = _.filter(targets, s => s.structureType !== STRUCTURE_SPAWN)
 
-  const inRange = _.filter(canBeCancelled, x => x.pos.isNearTo(creep))
+  const inRange = _.filter(canBeCancelled, s => s.pos.isNearTo(creep))
   if (inRange.length === 0) {
     return ERR_NOT_FOUND
   }
@@ -309,7 +301,7 @@ const handleInvasion = function (creep) {
       }
     )
 
-    const inRange = _.filter(spawns, x => x.pos.isNearTo(creep))
+    const inRange = _.filter(spawns, s => s.pos.isNearTo(creep))
 
     for (const spawn of inRange) {
       // because Invader suicides when there are no creeps in room
@@ -324,6 +316,19 @@ const handleInvasion = function (creep) {
   }
 
   return ERR_BUSY
+}
+
+const moveAround = function (creep) {
+  if (!creep.__legs__) {
+    return ERR_INVALID_TARGET
+  }
+
+  // TODO path
+  // TODO look ahead
+  creep.move(BOTTOM_LEFT)
+  creep.move(BOTTOM)
+
+  return OK
 }
 
 const getCreepByFlagName = function (flagName) {
@@ -392,6 +397,39 @@ const getCreepXgate = function (room, x, y) {
   return OK
 }
 
+const grab = function (creep, what) {
+  const targets = getGrabTargets(creep.room, what)
+
+  let didWithdraw = false
+  let didPickup = false
+
+  for (const target of targets) {
+    const from = target[target.type]
+
+    if (!from.pos.isNearTo(creep)) continue
+
+    if ((didWithdraw === false) && (target.type === LOOK_TOMBSTONES || target.type === LOOK_RUINS)) {
+      const rc = creep.withdraw(from, what)
+      if (rc === OK) {
+        didWithdraw = true
+      }
+    }
+
+    if (didPickup === false && target.type === LOOK_RESOURCES) {
+      const rc = creep.pickup(from)
+      if (rc === OK) {
+        didPickup = true
+      }
+    }
+
+    if (didWithdraw && didPickup) break
+  }
+
+  if (didWithdraw || didPickup) return OK
+
+  return ERR_NOT_FOUND
+}
+
 const getGrabTargets = function (room, what) {
   if (room.__grab_target_cache__?.[what]) {
     return room.__grab_target_cache__[what]
@@ -442,7 +480,8 @@ const getGrabTargets = function (room, what) {
     if (structure.structureType === STRUCTURE_NUKER) continue
 
     if (!room.__no_spawn__) {
-      if (structure.structureType !== STRUCTURE_CONTAINER) continue
+      if (structure.structureType !== STRUCTURE_CONTAINER &&
+          structure.structureType !== STRUCTURE_TERMINAL) continue
     }
 
     if (structure.store && structure.store.getUsedCapacity(what) > 0) {
@@ -463,15 +502,21 @@ const getGrabTargets = function (room, what) {
 }
 
 const getRestockTargets = function (room, what) {
-  if (room.__restock_target_cache__) {
-    return room.__restock_target_cache__
+  if (room.__restock_target_cache__?.[what]) {
+    return room.__restock_target_cache__[what]
   }
 
   const structures = room.find(FIND_STRUCTURES)
 
-  const withDemand = _.filter(structures, x => (x.structureType !== STRUCTURE_CONTAINER && x.store && x.store.getFreeCapacity(what) > 0))
+  const destinationStructures = _.filter(structures, s => s.structureType !== STRUCTURE_CONTAINER && s.structureType !== STRUCTURE_TERMINAL)
 
-  return (room.__restock_target_cache__ = withDemand)
+  const withDemand = _.filter(destinationStructures, s => (s.store && s.store.getFreeCapacity(what) > 0))
+
+  if (room.__restock_target_cache__ === undefined) {
+    room.__restock_target_cache__ = { }
+  }
+
+  return (room.__restock_target_cache__[what] = withDemand)
 }
 
 const creepXenergyXgate = function (creep, intentPower) {
@@ -505,15 +550,15 @@ const getRepairTargets = function (room) {
 
   const structures = room.find(FIND_STRUCTURES)
 
-  const canBeRepaired = _.filter(structures, x => (CONSTRUCTION_COST[x.structureType] && x.hits && x.hitsMax && x.hits < x.hitsMax && x.hits < hitsThreshold))
+  const canBeRepaired = _.filter(structures, s => (CONSTRUCTION_COST[s.structureType] && s.hits && s.hitsMax && s.hits < s.hitsMax && s.hits < hitsThreshold))
 
   // to speed up balance tests on sim, cap ramparts at 45k
   // on production limit to 3M; since there is no defence any way, just stop at this mark
   const rampartThreshold = Game.rooms.sim ? 45000 : 3000000
 
-  const shouldBeRepaired = _.filter(canBeRepaired, x => (x.structureType !== STRUCTURE_RAMPART || x.hits < rampartThreshold))
+  const shouldBeRepaired = _.filter(canBeRepaired, s => (s.structureType !== STRUCTURE_RAMPART || s.hits < rampartThreshold))
 
-  const mineOrNeutral = _.filter(shouldBeRepaired, x => (x.my ?? true))
+  const mineOrNeutral = _.filter(shouldBeRepaired, s => (s.my ?? true))
 
   return (room.__repair_target_cache__ = mineOrNeutral)
 }
@@ -644,6 +689,10 @@ const makeBody = function (room) {
     body = [WORK, WORK, WORK, WORK, WORK, CARRY]
   }
 
+  if (capacity >= 900) {
+    body = [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE]
+  }
+
   return (room.__make_body_cache__ = body)
 }
 
@@ -656,7 +705,7 @@ const roomEnergyAndEnergyCapacity = function (room) {
   let spawns = _.filter(structures, _.matchesProperty('structureType', STRUCTURE_SPAWN))
   // do expensive check only if sus
   if (spawns.length > CONTROLLER_STRUCTURES[STRUCTURE_SPAWN][room.controller.level]) {
-    spawns = _.filter(spawns, x => x.isActive())
+    spawns = _.filter(spawns, s => s.isActive())
   }
 
   // no spawn at all
@@ -665,7 +714,7 @@ const roomEnergyAndEnergyCapacity = function (room) {
   let extensions = _.filter(structures, _.matchesProperty('structureType', STRUCTURE_EXTENSION))
   // do expensive check only if sus
   if (extensions.length > CONTROLLER_STRUCTURES[STRUCTURE_EXTENSION][room.controller.level]) {
-    extensions = _.filter(extensions, x => x.isActive())
+    extensions = _.filter(extensions, s => s.isActive())
   }
 
   // see how much potential energy can be restocked
@@ -673,7 +722,7 @@ const roomEnergyAndEnergyCapacity = function (room) {
   // n.b. expect that all creeps do restock
   // n.b. does not accout for power creeps
 
-  const creepsInRoom = _.filter(Game.creeps, x => !x.spawning && x.room.name === room.name)
+  const creepsInRoom = _.filter(Game.creeps, s => !s.spawning && s.room.name === room.name)
   let energy = 0
   let capacity = 0
 
@@ -681,7 +730,7 @@ const roomEnergyAndEnergyCapacity = function (room) {
     const e = spawn.store.getUsedCapacity(RESOURCE_ENERGY)
     energy += e
 
-    if (_.some(creepsInRoom, x => x.pos.isNearTo(spawn))) {
+    if (_.some(creepsInRoom, s => s.pos.isNearTo(spawn))) {
       capacity += SPAWN_ENERGY_CAPACITY
     } else {
       capacity += e
@@ -692,7 +741,7 @@ const roomEnergyAndEnergyCapacity = function (room) {
     const e = extension.store.getUsedCapacity(RESOURCE_ENERGY)
     energy += e
 
-    if (_.some(creepsInRoom, x => x.pos.isNearTo(extension))) {
+    if (_.some(creepsInRoom, s => s.pos.isNearTo(extension))) {
       capacity += EXTENSION_ENERGY_CAPACITY[room.controller.level]
     } else {
       capacity += e
@@ -932,7 +981,7 @@ Room.prototype.buildFromPlan = function () {
         structures = this.find(FIND_STRUCTURES)
       }
 
-      const structuresAtXY = _.filter(structures, x => x.pos.isEqualTo(position.x, position.y))
+      const structuresAtXY = _.filter(structures, s => s.pos.isEqualTo(position.x, position.y))
       for (const structure of structuresAtXY) {
         if (_.some(OBSTACLE_OBJECT_TYPES, _.matches(structure.structureType))) {
           structure.destroy()
