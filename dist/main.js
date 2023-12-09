@@ -51,6 +51,8 @@ const work = function (creep) {
   cancelConstructionSites(creep)
   handleInvasion(creep)
   moveAround(creep)
+
+  return OK
 }
 
 const signController = function (creep) {
@@ -1062,6 +1064,8 @@ const generatePixel = function () {
   if (Game.rooms.sim === undefined) {
     return Game.cpu.generatePixel()
   }
+
+  return ERR_BUSY
 }
 
 const clearMemory = function () {
