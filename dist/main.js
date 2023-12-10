@@ -97,10 +97,10 @@ const signController = function (creep) {
       if (target.sign.username !== SYSTEM_USERNAME || forcedControllerSign) {
         if (target.sign.text !== CONTROLLER_SIGN_TEXT || target.sign.username !== creep.owner.username) {
           // this has potential to loop over and over when text sanitation or uncaught forced marker is there
-          console.log('Controller signature was ${target.sign.text}')
-          console.log('Controller signature set ${CONTROLLER_SIGN_TEXT}')
+          console.log(`Controller signature was ${target.sign.text}`)
+          console.log(`Controller signature set ${CONTROLLER_SIGN_TEXT}`)
           rc = creep.signController(target, CONTROLLER_SIGN_TEXT)
-          console.log('Result is ${rc}')
+          console.log(`Result is ${rc}`)
 
           if (target.sign.username === SYSTEM_USERNAME) {
             forcedControllerSign = false
@@ -603,7 +603,7 @@ const makeAlternativeName = function (name) {
     .replace(/е/g, 'ё')
 
   if (alternativeName === name) {
-    return '${name}_twin'
+    return `${name}_twin`
   } else {
     return alternativeName
   }
@@ -672,7 +672,7 @@ const maybeSpawnCreep = function (name1, name2, room, x, y) {
   }
 
   if (queue.length === 0) {
-    console.log('No spawn in room [${room.name}] found for creep [${creepName}]')
+    console.log(`No spawn in room [${room.name}] found for creep [${creepName}]`)
     return ERR_NOT_FOUND
   }
 
@@ -883,7 +883,7 @@ const activateSafeMode = function (room) {
   // signal successful intent to following code
   room.__safe_mode_active__ = rc === OK
 
-  const message = 'Attempting to activate safe mode at room [${room.name} with rc [${rc}]'
+  const message = `Attempting to activate safe mode at room [${room.name} with rc [${rc}]`
   console.log(message)
   Game.notify(message)
 
