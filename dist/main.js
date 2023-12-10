@@ -810,7 +810,7 @@ const handleEventAttack = function (room, eventRecord) {
   const target = getObjectByIdDeadOrAlive(room, eventRecord.data.targetId)
   if (target === null) return
 
-  let hostileAction
+  let hostileAction = false
 
   if (target.owner) {
     hostileAction = target.my
@@ -1001,7 +1001,7 @@ Room.prototype.buildFromPlan = function () {
   const plan = ROOM_PLANS[this.name][this.__level__]
   if (plan === undefined) return
 
-  let structures
+  const structures = this.find(FIND_STRUCTURES)
 
   for (let i = 0; i < plan.length; ++i) {
     const code = plan.charCodeAt(i)
@@ -1010,10 +1010,6 @@ Room.prototype.buildFromPlan = function () {
 
     if (this.__no_spawn__) {
       if (structureType !== STRUCTURE_SPAWN) continue
-
-      if (structures === undefined) {
-        structures = this.find(FIND_STRUCTURES)
-      }
 
       const structuresAtXY = _.filter(structures, s => s.pos.isEqualTo(position.x, position.y))
       for (const structure of structuresAtXY) {
