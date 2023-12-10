@@ -4,7 +4,7 @@ const CONTROLLER_SIGN_TEXT = 'https://github.com/ELynx/Cornered_Hamster'
 let forcedControllerSign = true // once in code load force the sign, it is visible on new world map
 
 const ROOM_PLANS = {
-  'E56N59': {
+  E56N59: {
     0: '룃', // spawn
     1: '룃', // spawn
     2: '⢂⣂⤂룃⥃⥄', // spawn + 5 extensions
