@@ -755,24 +755,24 @@ const roomEnergyAndEnergyCapacity = function (room) {
   let capacity = 0
 
   for (const spawn of spawns) {
-    const e = spawn.store.getUsedCapacity(RESOURCE_ENERGY)
-    energy += e
+    const stored = spawn.store.getUsedCapacity(RESOURCE_ENERGY)
+    energy += stored
 
     if (_.some(creepsInRoom, s => s.pos.isNearTo(spawn))) {
       capacity += SPAWN_ENERGY_CAPACITY
     } else {
-      capacity += e
+      capacity += stored
     }
   }
 
   for (const extension of extensions) {
-    const e = extension.store.getUsedCapacity(RESOURCE_ENERGY)
-    energy += e
+    const stored = extension.store.getUsedCapacity(RESOURCE_ENERGY)
+    energy += stored
 
     if (_.some(creepsInRoom, s => s.pos.isNearTo(extension))) {
       capacity += EXTENSION_ENERGY_CAPACITY[room.controller.level]
     } else {
-      capacity += e
+      capacity += stored
     }
   }
 
