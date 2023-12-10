@@ -5,15 +5,16 @@ let forcedControllerSign = true // once in code load force the sign, it is visib
 
 const ROOM_PLANS = {
   'E56N59': {
-    0: '룃',
-    1: '룃',
-    2: '⢂⣂⤂룃⥃⥄',
-    3: '⡂⢂⣂⤂룃⥃⥄',
-    4: '⡂⢂⣂⤂ᢃ飃룃ᤃ⥃ᤄ⥄',
-    5: '⡂⢂⣂⤂ᢃ飃룃ᤃ⥃ᤄ⥄',
-    6: '⡂⢂⣂⤂ᢃ飃룃ᤃ⥃ᤄ⥄',
-    7: '⡂⢂⣂⤂ᢃ飃룃ᤃ⥃ᤄ⥄',
-    8: '⡂⢂⣂⤂ᢃ飃룃ᤃ⥃ᤄ⥄'
+    0: '룃', // spawn
+    1: '룃', // spawn
+    2: '⢂⣂⤂룃⥃⥄', // spawn + 5 extensions
+    3: '⡂⢂⣂⤂룃⥃⥄', // spawn + 6 extensions
+    4: '⡂⢂⣂⤂ᢃ飃룃ᤃ⥃ᤄ⥄', // spawn + 6 extensions + 3 containers + spawn rampart
+    5: '⡂⢂⣂⤂ᢃ飃룃ᤃ⥃ᤄ⥄', // -//-
+    6: '⡂⢂⣂⤂ᢃ飃룃ᤃ⥃ᤄ⥄', // -//-
+    7: '⡂⢂⣂餂뤂ᢃ飃룃ᤃ⥃ᤄ⥄', // mutate extension into spawn + spawn rampart
+    8: '硂顂颂뢂飂餂뤂颃뢃飃餃楃饃ꢄ䤄餄襄饄', // end build with 1 wall road
+    9: '硂顂颂뢂飂餂뤂颃뢃飃餃楃饃ꢄ䤄餄襄饄ꢅ' // end build with 2 wall roads
   }
 }
 
@@ -42,9 +43,10 @@ const controlCreeps = function () {
   // to resolve potential softlocks
   const flagNames = _.shuffle(_.keys(Game.flags))
   for (const flagName of flagNames) {
-    if (flagName === 'savePlan') continue
     work(getCreepByFlagName(flagName))
   }
+
+  fight(getCreepByInvasion())
 }
 
 const work = function (creep) {
@@ -65,6 +67,12 @@ const work = function (creep) {
   cancelConstructionSites(creep)
   handleInvasion(creep)
   moveAround(creep)
+
+  return OK
+}
+
+const fight = function (creep) {
+  if (creep === undefined) return ERR_INVALID_TARGET
 
   return OK
 }
@@ -305,7 +313,7 @@ const handleInvasion = function (creep) {
     return ERR_BUSY
   }
 
-  if (creep.room.__invasion_npc__) {
+  if (creep.room.__invasion_npc__ && creep.room.__level__ < 7) {
     const structures = creep.room.find(FIND_STRUCTURES)
 
     const spawns = _.filter(
@@ -358,6 +366,10 @@ const getCreepByFlagName = function (flagName) {
   }
 
   return getCreep(flagName, flag.room, flag.pos.x, flag.pos.y)
+}
+
+const getCreepByInvasion = function () {
+  return undefined
 }
 
 const getCreep = function (creepName, room, x, y) {
@@ -879,8 +891,23 @@ const activateSafeMode = function (room) {
 }
 
 const handleRoomState = function (room) {
-  if (room.controller === undefined) return
-  if (!room.controller.my) return
+  if (room.controller === undefined) {
+    room.__level__ = 0
+  }
+
+  if (!room.controller.my) {
+    room.__level__ = 0
+  }
+
+  if (room.__level__) {
+    return
+  }
+
+  room.__level__ = room.controller.level
+
+  if (room.__level__ === 8 && room.controller.isPowerEnabled) {
+    room.__level__ = 9
+  }
 
   // detect and handle no spawn state
   const structures = room.find(FIND_STRUCTURES)
@@ -934,17 +961,6 @@ StructureController.prototype.canActivateSafeMode = function () {
 }
 
 const performAutobuild = function () {
-  const flag = Game.flags.savePlan
-  if (flag) {
-    if (flag.room) {
-      flag.room.savePlan()
-    }
-
-    flag.remove()
-
-    return
-  }
-
   // when Invader died :)
   if (Game.time % CREEP_LIFE_TIME === 0) {
     for (const roomName in Game.rooms) {
@@ -953,11 +969,11 @@ const performAutobuild = function () {
   }
 }
 
-Room.prototype.savePlan = function () {
+Room.prototype.getPlan = function () {
   const structures = this
     .find(FIND_STRUCTURES)
     .sort(
-      function (s1, s2) {
+      (s1, s2) => {
         const index1 = (s1.pos.y + 1) * 100 + s1.pos.x
         const index2 = (s2.pos.y + 1) * 100 + s2.pos.x
         if (index1 === index2) return s1.structureType.localeCompare(s2.structureType)
@@ -975,14 +991,14 @@ Room.prototype.savePlan = function () {
   }
 
   if (plan === '') {
-    plan = undefined
+    return undefined
   }
 
-  console.log(plan)
+  return plan
 }
 
 Room.prototype.buildFromPlan = function () {
-  const plan = ROOM_PLANS[this.name][this.controller?.level ?? 0]
+  const plan = ROOM_PLANS[this.name][this.__level__]
   if (plan === undefined) return
 
   let structures
