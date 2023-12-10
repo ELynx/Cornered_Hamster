@@ -3,6 +3,20 @@ console.log('Code loaded')
 const CONTROLLER_SIGN_TEXT = 'https://github.com/ELynx/Cornered_Hamster'
 let forcedControllerSign = true // once in code load force the sign, it is visible on new world map
 
+const ROOM_PLANS = {
+  'E56N59': {
+    0: '룃',
+    1: '룃',
+    2: '⢂⣂⤂룃⥃⥄',
+    3: '⡂⢂⣂⤂룃⥃⥄',
+    4: '⡂⢂⣂⤂ᢃ飃룃ᤃ⥃ᤄ⥄',
+    5: '⡂⢂⣂⤂ᢃ飃룃ᤃ⥃ᤄ⥄',
+    6: '⡂⢂⣂⤂ᢃ飃룃ᤃ⥃ᤄ⥄',
+    7: '⡂⢂⣂⤂ᢃ飃룃ᤃ⥃ᤄ⥄',
+    8: '⡂⢂⣂⤂ᢃ飃룃ᤃ⥃ᤄ⥄'
+  }
+}
+
 module.exports.loop = function () {
   processRoomEventLogs() // first because activates safe mode
   handleRoomStates() // second because set flags used in other code
@@ -964,11 +978,11 @@ Room.prototype.savePlan = function () {
     plan = undefined
   }
 
-  this.memory.plan = plan
+  console.log(plan)
 }
 
 Room.prototype.buildFromPlan = function () {
-  const plan = this.memory.plan
+  const plan = ROOM_PLANS[this.name][this.controller?.level ?? 0]
   if (plan === undefined) return
 
   let structures
@@ -1072,12 +1086,7 @@ const generatePixel = function () {
 
 const clearMemory = function () {
   Memory.creeps = undefined
-  Memory.spawns = undefined
   Memory.flags = undefined
-
-  for (const roomName in Memory.rooms) {
-    if (!Game.rooms[roomName]) {
-      Memory.rooms[roomName] = undefined
-    }
-  }
+  Memory.rooms = undefined
+  Memory.spawns = undefined
 }
