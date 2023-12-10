@@ -23,7 +23,3 @@ I just really wanted to solve a puzzle for that room. Intent is not to use any o
 Also, since this is hardly a secret, I decided to make it public.
 
 Suggestions, issues, PRs are welcome.
-
-## Elaboration
-
-<https://screepers.github.io/screeps-tools/?share=N4IgTgxgNiBcAcAaEAjArgSygEwwOwHMBnOUIgBwEMB3POAbVAA84BmAFmQE82BfRZm04gesAEz9BsVgDZucCQF1kUSigZTZ82O17KQ5APbUApmADKVWhpAtpAdm279AFzMBbfJRixGttgCs2krIeGgA1mY2dqyOInz6hihEZgBuUb6arMF6yGCGlNjRQk6S-tLCogF6-CB4lO4mcCAAogEyAHIBAJwgyEQAFpRgRbAgg8PYrCC8QA#/building-planner>
