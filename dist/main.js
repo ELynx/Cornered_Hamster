@@ -899,11 +899,9 @@ const handleRoomState = function (room) {
     room.__level__ = 0
   }
 
-  if (room.__level__) {
-    return
+  if (room.__level__ === undefined) {
+    room.__level__ = room.controller.level
   }
-
-  room.__level__ = room.controller.level
 
   if (room.__level__ === 8 && room.controller.isPowerEnabled) {
     room.__level__ = 9
@@ -961,7 +959,6 @@ StructureController.prototype.canActivateSafeMode = function () {
 }
 
 const performAutobuild = function () {
-  // when Invader died :)
   if (Game.time % CREEP_LIFE_TIME === 0) {
     for (const roomName in Game.rooms) {
       Game.rooms[roomName].buildFromPlan()
