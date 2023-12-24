@@ -318,7 +318,7 @@ const handleInvasion = function (creep) {
     return ERR_BUSY
   }
 
-  if (creep.room.__invasion_npc__ && creep.room.__level__ < 7) {
+  if (creep.room.__invasion_npc__ && (creep.room.__can_fight__ === undefined)) {
     const structures = creep.room.find(FIND_STRUCTURES)
 
     const spawns = _.filter(
