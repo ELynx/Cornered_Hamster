@@ -18,6 +18,11 @@ const ROOM_PLANS = {
   }
 }
 
+// fallback for simulation
+if (Game.rooms.sim) {
+  ROOM_PLANS['sim'] = ROOM_PLANS['E56N59']
+}
+
 module.exports.loop = function () {
   processRoomEventLogs() // first because activates safe mode
   handleRoomStates() // second because set flags used in other code
@@ -968,7 +973,9 @@ StructureController.prototype.canActivateSafeMode = function () {
 }
 
 const performAutobuild = function () {
-  if (Game.time % CREEP_LIFE_TIME === 0) {
+  const PERIOD = Game.rooms.sim ? 10 : CREEP_LIFE_TIME
+
+  if (Game.time % PERIOD === 0) {
     for (const roomName in Game.rooms) {
       Game.rooms[roomName].buildFromPlan()
     }
@@ -1041,22 +1048,25 @@ Room.prototype.buildFromPlan = function () {
     this.createConstructionSite(position.x, position.y, structureType)
   }
 
-  let hasPlannedSpawns = _.some(structures, s => s.structureType === STRUCTURE_SPAWN && s.__according_to_plan__ && s.__destroy__ !== true)
+  const maxLevel = this.memory.maxLevel || 0
+  if (this.__level__ >= maxLevel) {
+    let hasPlannedSpawns = _.some(structures, s => s.structureType === STRUCTURE_SPAWN && s.__according_to_plan__ && s.__destroy__ !== true)
 
-  for (const structure of structures) {
-    if (structure.__according_to_plan__) continue
-    if (structure.__destroy__) continue
-
-    // no doubts over non-spawn
-    if (structure.structureType !== STRUCTURE_SPAWN) {
-      structure.__destroy__ = true
-      continue
-    }
-
-    // spawn that is not according to plan
-    if (hasPlannedSpawns) {
-      structure.__destroy__ = true
-      hasPlannedSpawns = false // just to prevent cascades
+    for (const structure of structures) {
+      if (structure.__according_to_plan__) continue
+      if (structure.__destroy__) continue
+  
+      // no doubts over non-spawn
+      if (structure.structureType !== STRUCTURE_SPAWN) {
+        structure.__destroy__ = true
+        continue
+      }
+  
+      // spawn that is not according to plan
+      if (hasPlannedSpawns) {
+        structure.__destroy__ = true
+        hasPlannedSpawns = false // just to prevent cascades
+      }
     }
   }
 
@@ -1143,6 +1153,5 @@ const generatePixel = function () {
 const clearMemory = function () {
   Memory.creeps = undefined
   Memory.flags = undefined
-  Memory.rooms = undefined
   Memory.spawns = undefined
 }
