@@ -628,7 +628,7 @@ const maybeSpawnCreep = function (name1, name2, room, x, y) {
 
   // if something is already spawning
   const creep2 = Game.creeps[name2]
-  if (creep1 && creep2.spawning) {
+  if (creep2 && creep2.spawning) {
     return OK
   }
 
