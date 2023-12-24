@@ -464,7 +464,7 @@ const grab = function (creep, what) {
 }
 
 const getGrabTargets = function (room, what) {
-  if (room.__grab_target_cache__?.[what]) {
+  if (room.__grab_target_cache__ && room.__grab_target_cache__[what]) {
     return room.__grab_target_cache__[what]
   }
 
@@ -535,7 +535,7 @@ const getGrabTargets = function (room, what) {
 }
 
 const getRestockTargets = function (room, what) {
-  if (room.__restock_target_cache__?.[what]) {
+  if (room.__restock_target_cache__ && room.__restock_target_cache__[what]) {
     return room.__restock_target_cache__[what]
   }
 
@@ -622,13 +622,13 @@ const maybeSpawnCreep = function (name1, name2, room, x, y) {
 
   // if something is already spawning
   const creep1 = Game.creeps[name1]
-  if (creep1?.spawning) {
+  if (creep1 && creep1.spawning) {
     return OK
   }
 
   // if something is already spawning
   const creep2 = Game.creeps[name2]
-  if (creep2?.spawning) {
+  if (creep1 && creep2.spawning) {
     return OK
   }
 
