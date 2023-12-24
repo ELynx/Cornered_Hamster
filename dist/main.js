@@ -912,6 +912,11 @@ const handleRoomState = function (room) {
     room.__level__ = 9
   }
 
+  // TODO release level 8 after invent how to manage
+  if (room.__level__ && room.__level__ > 7) {
+    room.__level__ = 7
+  }
+
   if (room.__level__ > 0) {
     const maxLevel = room.memory.maxLevel || 0
     if (maxLevel < room.__level__) {
