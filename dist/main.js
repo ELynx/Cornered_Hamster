@@ -1004,7 +1004,10 @@ Room.prototype.getPlan = function () {
 }
 
 Room.prototype.buildFromPlan = function () {
-  const plan = ROOM_PLANS[this.name][this.memory.maxLevel || this.__level__]
+  const plans = ROOM_PLANS[this.name]
+  if (plans === undefined) return
+
+  const plan = plans[this.memory.maxLevel || this.__level__]
   if (plan === undefined) return
 
   const structures = this.find(FIND_STRUCTURES)
