@@ -992,13 +992,17 @@ const performAutobuild = function () {
   }
 }
 
+const indexFromPosition = function (position) {
+  return (position.y + 1) * 100 + position.x
+}
+
 Room.prototype.getPlan = function () {
   const structures = this
     .find(FIND_STRUCTURES)
     .sort(
       (s1, s2) => {
-        const index1 = (s1.pos.y + 1) * 100 + s1.pos.x
-        const index2 = (s2.pos.y + 1) * 100 + s2.pos.x
+        const index1 = indexFromPosition(s1.pos)
+        const index2 = indexFromPosition(s2.pos)
         if (index1 === index2) return s1.structureType.localeCompare(s2.structureType)
 
         return index1 - index2
