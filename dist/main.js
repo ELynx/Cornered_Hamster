@@ -928,10 +928,6 @@ const handleRoomState = function (room) {
   const structures = room.find(FIND_STRUCTURES)
   room.__no_spawn__ = !_.some(structures, _.matchesProperty('structureType', STRUCTURE_SPAWN))
 
-  if (room.__no_spawn__) {
-    room.buildFromPlan()
-  }
-
   const hostiles = room.find(FIND_HOSTILE_CREEPS)
   if (hostiles.length > 0) {
     room.__invasion__ = true
@@ -965,6 +961,10 @@ const handleRoomState = function (room) {
     room.__invasion_pc__ = false
     room.__invasion_npc__ = false
   }
+
+  if (room.__no_spawn__) room.__emergency__ = true
+  else if (room.__invasion__) room.__emergency__ = true
+  else room.__emergency__ = false
 }
 
 StructureController.prototype.canActivateSafeMode = function () {
@@ -981,6 +981,13 @@ const performAutobuild = function () {
   if (Game.time % PERIOD === 0) {
     for (const roomName in Game.rooms) {
       Game.rooms[roomName].buildFromPlan()
+    }
+  } else {
+    for (const roomName in Game.rooms) {
+      const room = Game.rooms[roomName]
+      if (room.__no_spawn__) {
+        room.buildFromPlan()
+      }
     }
   }
 }
@@ -1021,6 +1028,9 @@ Room.prototype.buildFromPlan = function () {
   if (plan === undefined) return
 
   const structures = this.find(FIND_STRUCTURES)
+  const constructionSites = this.find(FIND_CONSTRUCTION_SITES)
+
+  let constructionSitesCreated = false
 
   for (let i = 0; i < plan.length; ++i) {
     const code = plan.charCodeAt(i)
@@ -1030,31 +1040,58 @@ Room.prototype.buildFromPlan = function () {
     if (this.__no_spawn__ && structureType !== STRUCTURE_SPAWN) continue
 
     const structuresAtXY = _.filter(structures, s => s.pos.isEqualTo(position.x, position.y))
+    const constructionSitesAtXY = _.filter(constructionSites, s => s.pos.isEqualTo(position.x, position.y))
+
+    let builtOrPlanned = false
 
     for (const structure of structuresAtXY) {
       if (structure.structureType === structureType) {
         structure.__according_to_plan__ = true
-        break // from planned search loop
+        builtOrPlanned = true
+        break
       }
     }
+
+    for (const constructionSite of constructionSitesAtXY) {
+      if (constructionSite.structureType === structureType) {
+        constructionSite.__according_to_plan__ = true
+        builtOrPlanned = true
+        break
+      }
+    }
+
+    if (builtOrPlanned) continue
+
+    let positionBusy = false
 
     if (this.__no_spawn__) {
       for (const structure of structuresAtXY) {
         if (_.some(OBSTACLE_OBJECT_TYPES, _.matches(structure.structureType))) {
           structure.__destroy__ = true
+          positionBusy = true
         }
+      }
+
+      for (const constructionSite of constructionSitesAtXY) {
+        constructionSite.__destroy__ = true
+        positionBusy = true
       }
     }
 
-    // this may fail because position is busy
-    // rely on being called again
-    this.createConstructionSite(position.x, position.y, structureType)
+    if (positionBusy) continue
+
+    const rc = this.createConstructionSite(position.x, position.y, structureType)
+    constructionSitesCreated = constructionSitesCreated || (rc === OK)
   }
 
   const maxLevel = this.memory.maxLevel || 0
-  if (this.__level__ >= maxLevel) {
-    let hasPlannedSpawns = _.some(structures, s => s.structureType === STRUCTURE_SPAWN && s.__according_to_plan__ && s.__destroy__ !== true)
+  const hasConstructionSites = constructionSitesCreated || (constructionSites.length > 0)
+  const hasPlannedSpawns = _.some(structures, s => s.structureType === STRUCTURE_SPAWN && s.__according_to_plan__ && s.__destroy__ !== true)
 
+  // replace outside of emergencies
+  // replace only with higher level plans
+  // replace one by one
+  if (!this.__emergency__ && (this.__level__ >= maxLevel) && !hasConstructionSites) {
     for (const structure of structures) {
       if (structure.__according_to_plan__) continue
       if (structure.__destroy__) continue
@@ -1062,13 +1099,36 @@ Room.prototype.buildFromPlan = function () {
       // no doubts over non-spawn
       if (structure.structureType !== STRUCTURE_SPAWN) {
         structure.__destroy__ = true
-        continue
+        break // one at a time
       }
 
       // spawn that is not according to plan
+
+      // only if there are spawns according to plan
       if (hasPlannedSpawns) {
         structure.__destroy__ = true
-        hasPlannedSpawns = false // just to prevent cascades
+        break // one at a time
+      }
+    }
+  }
+
+  // replace outside of emergencies
+  // replace only with higher level plans
+  if (!this.__emergency__ && (this.__level__ >= maxLevel)) {
+    for (const constructionSite of constructionSites) {
+      if (constructionSite.__according_to_plan__) continue
+      if (constructionSite.__destroy__) continue
+
+      // no doubts over non-spawn
+      if (constructionSite.structureType !== STRUCTURE_SPAWN) {
+        constructionSite.__destroy__ = true
+      }
+
+      // spawn construction site that is not according to plan
+
+      // only if there are spawns according to plan
+      if (hasPlannedSpawns) {
+        constructionSite.__destroy__ = true
       }
     }
   }
@@ -1076,6 +1136,12 @@ Room.prototype.buildFromPlan = function () {
   for (const structure of structures) {
     if (structure.__destroy__) {
       structure.destroy()
+    }
+  }
+
+  for (const constructionSite of constructionSites) {
+    if (constructionSite.__destroy__) {
+      constructionSite.remove()
     }
   }
 }
