@@ -20,7 +20,7 @@ const ROOM_PLANS = {
 
 // fallback for simulation
 if (Game.rooms.sim) {
-  ROOM_PLANS['sim'] = ROOM_PLANS['E56N59']
+  ROOM_PLANS.sim = ROOM_PLANS.E56N59
 }
 
 module.exports.loop = function () {
@@ -1060,13 +1060,13 @@ Room.prototype.buildFromPlan = function () {
     for (const structure of structures) {
       if (structure.__according_to_plan__) continue
       if (structure.__destroy__) continue
-  
+
       // no doubts over non-spawn
       if (structure.structureType !== STRUCTURE_SPAWN) {
         structure.__destroy__ = true
         continue
       }
-  
+
       // spawn that is not according to plan
       if (hasPlannedSpawns) {
         structure.__destroy__ = true
