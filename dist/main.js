@@ -45,21 +45,29 @@ const handleRoomStates = function () {
 }
 
 const controlCreeps = function () {
+  // TODO replace old spawn logic
   // to resolve potential softlocks
   const flagNames = _.shuffle(_.keys(Game.flags))
   for (const flagName of flagNames) {
-    work(getCreepByFlagName(flagName))
+    getCreepByFlagName(flagName)
   }
 
-  fight(getCreepByInvasion())
+  // to resolve potential softlocks
+  const creepNames = _.shuffle(_.keys(Game.creeps))
+  for (const creepName of creepNames) {
+    const creep = Game.creeps[creepName]
+    if (creep.spawning) continue
+
+    creep.__work__ = creep.getActiveBodyparts(WORK)
+    creep.__legs__ = creep.getActiveBodyparts(MOVE)
+
+    if (creep.__work__ > 0) {
+      work(creep)
+    }
+  }
 }
 
 const work = function (creep) {
-  if (creep === undefined) return ERR_INVALID_TARGET
-
-  creep.__work__ = creep.getActiveBodyparts(WORK)
-  creep.__legs__ = creep.getActiveBodyparts(MOVE)
-
   signController(creep)
   getBoosted(creep)
   grabEnergy(creep)
@@ -72,12 +80,6 @@ const work = function (creep) {
   cancelConstructionSites(creep)
   handleInvasion(creep)
   moveAround(creep)
-
-  return OK
-}
-
-const fight = function (creep) {
-  if (creep === undefined) return ERR_INVALID_TARGET
 
   return OK
 }
@@ -371,10 +373,6 @@ const getCreepByFlagName = function (flagName) {
   }
 
   return getCreep(flagName, flag.room, flag.pos.x, flag.pos.y)
-}
-
-const getCreepByInvasion = function () {
-  return undefined
 }
 
 const getCreep = function (creepName, room, x, y) {
