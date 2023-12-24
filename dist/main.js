@@ -907,7 +907,7 @@ const handleRoomState = function (room) {
     room.__level__ = 9
   }
 
-  if(room.__level__ > 0) {
+  if (room.__level__ > 0) {
     const maxLevel = room.memory.maxLevel || 0
     if (maxLevel < room.__level__) {
       room.memory.maxLevel = room.__level__
@@ -1018,7 +1018,7 @@ Room.prototype.buildFromPlan = function () {
 
     const structuresAtXY = _.filter(structures, s => s.pos.isEqualTo(position.x, position.y))
 
-    for (let structure of structuresAtXY) {
+    for (const structure of structuresAtXY) {
       if (structure.structureType === structureType) {
         structure.__according_to_plan__ = true
         break // from planned search loop
@@ -1026,7 +1026,7 @@ Room.prototype.buildFromPlan = function () {
     }
 
     if (this.__no_spawn__) {
-      for (let structure of structuresAtXY) {
+      for (const structure of structuresAtXY) {
         if (_.some(OBSTACLE_OBJECT_TYPES, _.matches(structure.structureType))) {
           structure.__destroy__ = true
         }
@@ -1040,7 +1040,7 @@ Room.prototype.buildFromPlan = function () {
 
   let hasPlannedSpawns = _.some(structures, s => s.structureType === STRUCTURE_SPAWN && s.__according_to_plan__ && s.__destroy__ !== true)
 
-  for (let structure of structures) {
+  for (const structure of structures) {
     if (structure.__according_to_plan__) continue
     if (structure.__destroy__) continue
 
