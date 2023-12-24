@@ -586,7 +586,7 @@ const getRepairTargets = function (room) {
 
   const shouldBeRepaired = _.filter(canBeRepaired, s => (s.structureType !== STRUCTURE_RAMPART || s.hits < rampartThreshold))
 
-  const mineOrNeutral = _.filter(shouldBeRepaired, s => (s.my ?? true))
+  const mineOrNeutral = _.filter(shouldBeRepaired, s => (s.my || true))
 
   return (room.__repair_target_cache__ = mineOrNeutral)
 }
@@ -907,6 +907,15 @@ const handleRoomState = function (room) {
     room.__level__ = 9
   }
 
+  if(room.__level__ > 0) {
+    const maxLevel = room.memory.maxLevel || 0
+    if (maxLevel < room.__level__) {
+      room.memory.maxLevel = room.__level__
+    }
+  } else {
+    room.memory.maxLevel = undefined
+  }
+
   // detect and handle no spawn state
   const structures = room.find(FIND_STRUCTURES)
   room.__no_spawn__ = !_.some(structures, _.matchesProperty('structureType', STRUCTURE_SPAWN))
@@ -995,7 +1004,7 @@ Room.prototype.getPlan = function () {
 }
 
 Room.prototype.buildFromPlan = function () {
-  const plan = ROOM_PLANS[this.name][this.__level__]
+  const plan = ROOM_PLANS[this.name][this.memory.maxLevel || this.__level__]
   if (plan === undefined) return
 
   const structures = this.find(FIND_STRUCTURES)
@@ -1005,18 +1014,53 @@ Room.prototype.buildFromPlan = function () {
     const [position, structureType] = Structure.prototype.decode(code)
     if (structureType === undefined) continue
 
-    if (this.__no_spawn__) {
-      if (structureType !== STRUCTURE_SPAWN) continue
+    if (this.__no_spawn__ && structureType !== STRUCTURE_SPAWN) continue
 
-      const structuresAtXY = _.filter(structures, s => s.pos.isEqualTo(position.x, position.y))
-      for (const structure of structuresAtXY) {
+    const structuresAtXY = _.filter(structures, s => s.pos.isEqualTo(position.x, position.y))
+
+    for (let structure of structuresAtXY) {
+      if (structure.structureType === structureType) {
+        structure.__according_to_plan__ = true
+        break // from planned search loop
+      }
+    }
+
+    if (this.__no_spawn__) {
+      for (let structure of structuresAtXY) {
         if (_.some(OBSTACLE_OBJECT_TYPES, _.matches(structure.structureType))) {
-          structure.destroy()
+          structure.__destroy__ = true
         }
       }
     }
 
+    // this may fail because position is busy
+    // rely on being called again
     this.createConstructionSite(position.x, position.y, structureType)
+  }
+
+  let hasPlannedSpawns = _.some(structures, s => s.structureType === STRUCTURE_SPAWN && s.__according_to_plan__ && s.__destroy__ !== true)
+
+  for (let structure of structures) {
+    if (structure.__according_to_plan__) continue
+    if (structure.__destroy__) continue
+
+    // no doubts over non-spawn
+    if (structure.structureType !== STRUCTURE_SPAWN) {
+      structure.__destroy__ = true
+      continue
+    }
+
+    // spawn that is not according to plan
+    if (hasPlannedSpawns) {
+      structure.__destroy__ = true
+      hasPlannedSpawns = false // just to prevent cascades
+    }
+  }
+
+  for (const structure of structures) {
+    if (structure.__destroy__) {
+      structure.destroy()
+    }
   }
 }
 
