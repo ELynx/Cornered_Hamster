@@ -1154,4 +1154,17 @@ const clearMemory = function () {
   Memory.creeps = undefined
   Memory.flags = undefined
   Memory.spawns = undefined
+
+  for (const name in Memory.rooms) {
+    if (Game.rooms[name]) {
+      Memory.rooms[name] = _.pick(
+        Memory.rooms[name],
+        [
+          'maxLevel'
+        ]
+      )
+    } else {
+      Memory.rooms[name] = undefined
+    }
+  }
 }
