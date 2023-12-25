@@ -1060,6 +1060,8 @@ Room.prototype.getPlan = function () {
   }
 
   if (plan === '') {
+    // TODO remove because this is not a valid
+    findNearToBoth({ x: 4, y: 4 }, { x: 12, y: 13 })
     return undefined
   }
 
