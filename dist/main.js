@@ -3,17 +3,16 @@ console.log('Code loaded')
 const CONTROLLER_SIGN_TEXT = 'https://github.com/ELynx/Cornered_Hamster'
 let forcedControllerSign = true // once in code load force the sign, it is visible on new world map
 
-// spawns are first to be upgraded first
 const ROOM_PLANS = {
   E56N59: {
     0: '룃', // spawn
     1: '룃', // spawn
     2: '룃⢂⣂⤂⥃⥄', // spawn + 5 extensions
     3: '룃⡂⢂⣂⤂⥃⥄', // spawn + 6 extensions
-    4: '룃⡂⢂⣂⤂ᢃ飃ᤃ⥃ᤄ⥄', // spawn + 6 extensions + 3 containers + spawn rampart
-    5: '룃⡂⢂⣂⤂ᢃ飃ᤃ⥃ᤄ⥄', // -//-
-    6: '룃⡂⢂⣂⤂ᢃ飃ᤃ⥃ᤄ⥄', // -//-
-    7: '룃뤂⡂⢂⣂餂ᢃ飃ᤃ⥃ᤄ⥄', // mutate extension into spawn + spawn rampart
+    4: '룃⡂⢂⣂⤂⥃⥄ᢃᤃᤄ飃', // spawn + 6 extensions + 3 containers + spawn rampart
+    5: '룃⡂⢂⣂⤂⥃⥄ᢃᤃᤄ飃', // -//-
+    6: '룃⡂⢂⣂⤂⥃⥄ᢃᤃᤄ飃', // -//-
+    7: '룃뤂⡂⢂⣂⥃⥄ᢃᤃᤄ飃餂', // mutate extension into spawn + spawn rampart
     8: '뤂뢂뢃硂顂颂飂餂颃飃餃楃饃ꢄ䤄餄襄饄', // end build with 1 wall road
     9: '뤂뢂뢃硂顂颂飂餂颃飃餃楃饃ꢄ䤄餄襄饄ꢅ' // end build with 2 wall roads
   }
