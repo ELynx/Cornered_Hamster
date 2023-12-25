@@ -1014,7 +1014,7 @@ const findNearToBoth = function (position1, position2) {
   const nearTo = function (position) {
     const result = new Array(8)
     for (let dx = -1; dx <= 1; ++dx) {
-      for (let dy = -1; dy <= 1; ++ dy) {
+      for (let dy = -1; dy <= 1; ++dy) {
         if (dx === 0 && dy === 0) continue
 
         const x = position.x + dx
