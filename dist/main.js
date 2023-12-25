@@ -3,18 +3,19 @@ console.log('Code loaded')
 const CONTROLLER_SIGN_TEXT = 'https://github.com/ELynx/Cornered_Hamster'
 let forcedControllerSign = true // once in code load force the sign, it is visible on new world map
 
+// spawns are first to be upgraded first
 const ROOM_PLANS = {
   E56N59: {
     0: '룃', // spawn
     1: '룃', // spawn
-    2: '⢂⣂⤂룃⥃⥄', // spawn + 5 extensions
-    3: '⡂⢂⣂⤂룃⥃⥄', // spawn + 6 extensions
-    4: '⡂⢂⣂⤂ᢃ飃룃ᤃ⥃ᤄ⥄', // spawn + 6 extensions + 3 containers + spawn rampart
-    5: '⡂⢂⣂⤂ᢃ飃룃ᤃ⥃ᤄ⥄', // -//-
-    6: '⡂⢂⣂⤂ᢃ飃룃ᤃ⥃ᤄ⥄', // -//-
-    7: '⡂⢂⣂餂뤂ᢃ飃룃ᤃ⥃ᤄ⥄', // mutate extension into spawn + spawn rampart
-    8: '硂顂颂뢂飂餂뤂颃뢃飃餃楃饃ꢄ䤄餄襄饄', // end build with 1 wall road
-    9: '硂顂颂뢂飂餂뤂颃뢃飃餃楃饃ꢄ䤄餄襄饄ꢅ' // end build with 2 wall roads
+    2: '룃⢂⣂⤂⥃⥄', // spawn + 5 extensions
+    3: '룃⡂⢂⣂⤂⥃⥄', // spawn + 6 extensions
+    4: '룃⡂⢂⣂⤂ᢃ飃ᤃ⥃ᤄ⥄', // spawn + 6 extensions + 3 containers + spawn rampart
+    5: '룃⡂⢂⣂⤂ᢃ飃ᤃ⥃ᤄ⥄', // -//-
+    6: '룃⡂⢂⣂⤂ᢃ飃ᤃ⥃ᤄ⥄', // -//-
+    7: '룃뤂⡂⢂⣂餂ᢃ飃ᤃ⥃ᤄ⥄', // mutate extension into spawn + spawn rampart
+    8: '뤂뢂뢃硂顂颂飂餂颃飃餃楃饃ꢄ䤄餄襄饄', // end build with 1 wall road
+    9: '뤂뢂뢃硂顂颂飂餂颃飃餃楃饃ꢄ䤄餄襄饄ꢅ' // end build with 2 wall roads
   }
 }
 
@@ -976,9 +977,12 @@ StructureController.prototype.canActivateSafeMode = function () {
 }
 
 const performAutobuild = function () {
-  const PERIOD = Game.rooms.sim ? 10 : CREEP_LIFE_TIME
+  const force = Memory.forceAutobuild === true
+  const period = Game.rooms.sim ? 10 : CREEP_LIFE_TIME
 
-  if (Game.time % PERIOD === 0) {
+  Memory.forceAutobuild = undefined
+
+  if (force || (Game.time % period === 0)) {
     for (const roomName in Game.rooms) {
       Game.rooms[roomName].buildFromPlan()
     }
@@ -1175,16 +1179,24 @@ Room.prototype.buildFromPlan = function () {
     }
   }
 
+  let destroyed = false
+
   for (const structure of structures) {
     if (structure.__destroy__) {
-      structure.destroy()
+      const rc = structure.destroy()
+      destroyed = destroyed || (rc === OK)
     }
   }
 
   for (const constructionSite of constructionSites) {
     if (constructionSite.__destroy__) {
-      constructionSite.remove()
+      const rc = constructionSite.remove()
+      destroyed = destroyed || (rc === OK)
     }
+  }
+
+  if (destroyed) {
+    Memory.forceAutobuild = true
   }
 }
 
