@@ -26,21 +26,21 @@ if (Game.rooms.sim) {
 }
 
 module.exports.loop = function () {
-  handleRoomEventLogs() // first because activates safe mode
-  handleRoomStates() // second because set flags used in other code
+  handleEventLogs() // first because activates safe mode
+  handleStates() // second because set flags used in other code
   controlCreeps()
   performAutobuild()
   performTrading()
   clearMemory()
 }
 
-const handleRoomEventLogs = function () {
+const handleEventLogs = function () {
   for (const roomName in Game.rooms) {
     handleRoomEventLog(Game.rooms[roomName])
   }
 }
 
-const handleRoomStates = function () {
+const handleStates = function () {
   for (const roomName in Game.rooms) {
     handleRoomState(Game.rooms[roomName])
   }
@@ -1324,7 +1324,25 @@ Structure.prototype.decode = function (code) {
 }
 
 const performTrading = function () {
+  for (const roomName in Game.rooms) {
+    performRoomTrading(Game.rooms[roomName])
+  }
+
+  performIntershardResourcesTrading()
+
   generatePixel()
+}
+
+const performRoomTrading = function (room) {
+  if (!room.terminal) {
+    return ERR_INVALID_TARGET
+  }
+
+  return ERR_BUSY
+}
+
+const performIntershardResourcesTrading = function () {
+  return ERR_BUSY
 }
 
 const generatePixel = function () {
