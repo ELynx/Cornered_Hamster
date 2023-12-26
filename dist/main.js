@@ -1345,7 +1345,48 @@ const performRoomTrading = function (room) {
 }
 
 const performIntershardResourcesTrading = function () {
-  return ERR_BUSY
+  // memo for direction
+  // buy: pixels go out, credits go in
+  // sell: credits go out, pixels go in
+
+  const allBuyOrders = Game.market.getAllOrders({ type: ORDER_BUY, resourceType: PIXEL })
+  // no one is buying, go off the market
+  if (allBuyOrders.length === 0) {
+    return ERR_NOT_FOUND
+  }
+
+  const allSellOrders = Game.market.getAllOrders({ type: ORDER_SELL, resourceType: PIXEL })
+
+  // keep to one deal per tick
+  let orderId
+  let amount
+
+  const buyOrders = _.sortByOrder(allBuyOrders, ['price'], ['desc'])
+  // best deal will give x credits per pixel
+  const highestBuyPrice = buyOrders[0].price
+
+  if (allSellOrders.length > 0) {
+    const sellOrders = _.sortByOrder(allSellOrders, ['price'], ['asc'])
+    // best deal will give x pixels per credit
+    const lowestSellPrice = sellOrders[0].price
+
+    if (lowestSellPrice < highestBuyPrice)
+      if (lowestSellPrice <= Game.market.credits) {
+        orderId = sellOrders[0].orderId
+        amount = Math.floor(Game.market.credits / lowestSellPrice)
+      } else {
+        // cannot hustle, will not market on bad prices
+        return ERR_NOT_FOUND
+      }
+    }
+  }
+
+  if (orderId && amount) {
+    const rc = Game.market.deal(orderId, amount)
+    if (rc !== OK) {
+      console.log('Deal on order [' + orderId + '] failed with rc [' + rc + ']')
+    }
+  }
 }
 
 const generatePixel = function () {
