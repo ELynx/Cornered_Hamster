@@ -1197,6 +1197,7 @@ Room.prototype.buildFromPlan = function () {
   // replace one by one
   if (!this.__emergency__ && (this.__level__ >= maxLevel) && !hasConstructionSites) {
     for (const structure of structures) {
+      if (structure.structureType === STRUCTURE_CONTROLLER) continue
       if (structure.__according_to_plan__) continue
       if (structure.__destroy__) continue
 
