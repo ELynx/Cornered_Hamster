@@ -324,7 +324,7 @@ const handleInvasion = function (creep) {
     return ERR_BUSY
   }
 
-  if (creep.room.__invasion_npc__ && (creep.room.__can_fight__ === undefined)) {
+  if (creep.room.__invasion_npc__ && (creep.room.__can_fight__ !== true)) {
     const structures = creep.room.find(FIND_STRUCTURES)
 
     const spawns = _.filter(
@@ -339,7 +339,7 @@ const handleInvasion = function (creep) {
     const inRange = _.filter(spawns, s => s.pos.isNearTo(creep))
 
     for (const spawn of inRange) {
-      // because Invader suicides when there are no creeps in room
+      // because Invader is inactive when there is no creeps in room
       const rc = spawn.recycleCreep(creep)
       if (rc === OK) {
         spawn.__recycled_this_tick__ = true
