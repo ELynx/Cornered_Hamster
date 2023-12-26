@@ -12,7 +12,7 @@ const ROOM_PLANS = {
     4: '룃⡂⢂⣂⤂⥃⥄ᢃᤃᤄ飃', // spawn + 6 extensions + 3 containers + spawn rampart
     5: '룃⡂⢂⣂⤂⥃⥄ᢃᤃᤄ飃', // -//-
     6: '룃⡂⢂⣂⤂⥃⥄ᢃᤃᤄ飃', // -//-
-    7: '룃뤂⢂⣂⥃⥄ᢃᤃᤄ飃餂飂', // mutate extension into spawn + spawn rampart, mutate extension into terminal + terminal rampart
+    7: '룃뤂⡂⢂⥃⥄ᢃᤃᤄ飃餂飂', // mutate extension into spawn + spawn rampart, mutate extension into terminal + terminal rampart
     // TODO do not create lab until power is activated
     // TODO rethink and reorder 8+
     8: '뤂뢂뢃硂顂颂飂餂颃飃餃楃饃ꢄ䤄餄襄饄', // end build with 1 wall road
