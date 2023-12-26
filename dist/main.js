@@ -221,7 +221,7 @@ const shareEnergy = function (creep) {
     return ERR_NOT_FOUND
   }
 
-  const rc = creep.transfer(_.sample(inRange), what, Math.floor(hasEnergy / SHARE_FRACTION))
+  const rc = creep.transfer(_.sample(inRange), RESOURCE_ENERGY, Math.floor(hasEnergy / SHARE_FRACTION))
   if (rc === OK) {
     creep.__pipeline_transfer__ = true
   }
