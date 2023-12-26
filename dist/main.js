@@ -171,14 +171,18 @@ const restockEnergy = function (creep) {
     return ERR_NOT_ENOUGH_RESOURCES
   }
 
-  const targets = getRestockTargets(creep.room, RESOURCE_ENERGY)
+  return restock(creep, RESOURCE_ENERGY)
+}
+
+const restock = function (creep, what) {
+  const targets = getRestockTargets(creep.room, what)
 
   const inRange = _.filter(targets, s => s.pos.isNearTo(creep))
   if (inRange.length === 0) {
     return ERR_NOT_FOUND
   }
 
-  return creep.transfer(_.sample(inRange), RESOURCE_ENERGY)
+  return creep.transfer(_.sample(inRange), what)
 }
 
 const repair = function (creep) {
