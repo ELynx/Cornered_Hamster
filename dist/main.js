@@ -73,6 +73,7 @@ const work = function (creep) {
   grabEnergy(creep)
   upgradeController(creep)
   restockEnergy(creep)
+  shareEnergy(creep)
   repair(creep)
   build(creep)
   harvest(creep)
@@ -187,6 +188,38 @@ const restock = function (creep, what) {
   }
 
   const rc = creep.transfer(_.sample(inRange), what)
+  if (rc === OK) {
+    creep.__pipeline_transfer__ = true
+  }
+
+  return rc
+}
+
+const SHARE_FRACTION = 2
+
+const shareEnergy = function (creep) {
+  if (creep.__pipeline_transfer__) {
+    return ERR_BUSY
+  }
+
+  const hasEnergy = creep.store.getUsedCapacity(RESOURCE_ENERGY)
+  if (hasEnergy < SHARE_FRACTION) {
+    return ERR_NOT_ENOUGH_RESOURCES
+  }
+
+  // power creep will not be found
+  const targets = creep.room.find(FIND_CREEPS)
+
+  const mine = _.filter(targets, s => s.my)
+
+  const empty = _.filter(mine, s => s.store.getUsedCapacity(RESOURCE_ENERGY) === 0)
+
+  const inRange = _.filter(empty, s => s.pos.isNearTo(creep))
+  if (inRange.length === 0) {
+    return ERR_NOT_FOUND
+  }
+
+  const rc = creep.transfer(_.sample(inRange), what, Math.floor(hasEnergy / SHARE_FRACTION))
   if (rc === OK) {
     creep.__pipeline_transfer__ = true
   }
@@ -949,7 +982,8 @@ const handleRoomState = function (room) {
   const structures = room.find(FIND_STRUCTURES)
   room.__no_spawn__ = !_.some(structures, _.matchesProperty('structureType', STRUCTURE_SPAWN))
 
-  const hostiles = room.find(FIND_HOSTILE_CREEPS)
+  // TODO detect power creeps
+  const hostiles = _.filter(room.find(FIND_CREEPS), s => !s.my)
   if (hostiles.length > 0) {
     room.__invasion__ = true
 
