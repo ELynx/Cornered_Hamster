@@ -9,8 +9,6 @@
     "globals": [
       "_",
       "BODYPART_COST",
-      "BOTTOM_LEFT",
-      "BOTTOM",
       "BUILD_POWER",
       "CARRY",
       "CONSTRUCTION_COST",

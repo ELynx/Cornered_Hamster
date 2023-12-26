@@ -354,12 +354,7 @@ const moveAround = function (creep) {
     return ERR_INVALID_TARGET
   }
 
-  // TODO path
-  // TODO look ahead
-  creep.move(BOTTOM_LEFT)
-  creep.move(BOTTOM)
-
-  return OK
+  return ERR_BUSY
 }
 
 const getCreepByFlagName = function (flagName) {
@@ -720,9 +715,10 @@ const makeBody = function (room) {
     body = [WORK, WORK, WORK, WORK, WORK, CARRY]
   }
 
-  if (capacity >= 900) {
-    body = [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE]
-  }
+  // TODO lock behind some gate
+  //if (capacity >= 900) {
+  //  body = [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE]
+  //}
 
   return (room.__make_body_cache__ = body)
 }
