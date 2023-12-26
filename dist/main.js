@@ -175,6 +175,10 @@ const restockEnergy = function (creep) {
 }
 
 const restock = function (creep, what) {
+  if (creep.__pipeline_transfer__) {
+    return ERR_BUSY
+  }
+
   const targets = getRestockTargets(creep.room, what)
 
   const inRange = _.filter(targets, s => s.pos.isNearTo(creep))
@@ -182,7 +186,12 @@ const restock = function (creep, what) {
     return ERR_NOT_FOUND
   }
 
-  return creep.transfer(_.sample(inRange), what)
+  const rc = creep.transfer(_.sample(inRange), what)
+  if (rc === OK) {
+    creep.__pipeline_transfer__ = true
+  }
+
+  return rc
 }
 
 const repair = function (creep) {
