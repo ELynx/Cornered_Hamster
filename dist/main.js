@@ -776,9 +776,9 @@ const makeBody = function (room) {
   }
 
   // TODO lock behind some gate
-  //if (capacity >= 900) {
+  // if (capacity >= 900) {
   //  body = [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE]
-  //}
+  // }
 
   return (room.__make_body_cache__ = body)
 }
