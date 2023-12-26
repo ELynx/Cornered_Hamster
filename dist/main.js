@@ -428,10 +428,14 @@ const getCreepXgate = function (room, x, y) {
 }
 
 const grab = function (creep, what) {
-  const targets = getGrabTargets(creep.room, what)
+  let didWithdraw = creep.__pipeline_withdraw__ || false
+  let didPickup = creep.__pipeline_pickup__ || false
 
-  let didWithdraw = false
-  let didPickup = false
+  if (didWithdraw && didPickup) {
+    return ERR_BUSY
+  }
+
+  const targets = getGrabTargets(creep.room, what)
 
   for (const target of targets) {
     const from = target[target.type]
@@ -453,6 +457,14 @@ const grab = function (creep, what) {
     }
 
     if (didWithdraw && didPickup) break
+  }
+
+  if (didWithdraw) {
+    creep.__pipeline_withdraw__ = true
+  }
+
+  if (didPickup) {
+    creep.__pipeline_pickup__ = true
   }
 
   if (didWithdraw || didPickup) return OK
