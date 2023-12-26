@@ -1344,49 +1344,61 @@ const performRoomTrading = function (room) {
   return ERR_BUSY
 }
 
-const performIntershardResourcesTrading = function () {
-  // memo for direction
-  // buy: pixels go out, credits go in
-  // sell: credits go out, pixels go in
+const PIXELS_TO_KEEP = 500
+const PIXELS_DISCOUNT = 0.15
 
-  const allBuyOrders = Game.market.getAllOrders({ type: ORDER_BUY, resourceType: PIXEL })
-  // no one is buying, go off the market
-  if (allBuyOrders.length === 0) {
-    return ERR_NOT_FOUND
+const performIntershardResourcesTrading = function () {
+  // memo
+  // ORDER_SELL: pixels increase, credits decrease; lowest price best
+  // ORDER_BUY: pixels decrease, credits increase; highest price best
+
+  const hasPixels = Game.resources[PIXEL] || 0
+  if (hasPixels <= 0) {
+    return ERR_NOT_ENOUGH_RESOURCES
   }
 
   const allSellOrders = Game.market.getAllOrders({ type: ORDER_SELL, resourceType: PIXEL })
+  const allBuyOrders = Game.market.getAllOrders({ type: ORDER_BUY, resourceType: PIXEL })
+  
+  if (allSellOrders.length === 0 || allBuyOrders.length === 0) {
+    // cannot make informed market decisions, leave
+    return ERR_NOT_FOUND
+  }
 
-  // keep to one deal per tick
-  let orderId
-  let amount
-
+  // as they are presented on "Market" screen
+  const sellOrders = _.sortByOrder(allSellOrders, ['price'], ['asc'])
   const buyOrders = _.sortByOrder(allBuyOrders, ['price'], ['desc'])
-  // best deal will give x credits per pixel
+
+  
+  const lowestSalePrice = sellOrders[0].price
   const highestBuyPrice = buyOrders[0].price
 
-  if (allSellOrders.length > 0) {
-    const sellOrders = _.sortByOrder(allSellOrders, ['price'], ['asc'])
-    // best deal will give x pixels per credit
-    const lowestSellPrice = sellOrders[0].price
+  // if there is a crazy sale price
+  if ((lowestSalePrice < highestBuyPrice) && (lowestSalePrice <= Game.market.credits)) {
+    const canAfford = Math.floor(Game.market.credits / lowestSalePrice)
+    const fromSellOrder = Math.min(sellOrders[0].amount, canAfford)
+    const toBuyOrder = Math.min(buyOrders[0].amount, hasPixels)
+    const amount = Math.min(fromSellOrder, toBuyOrder)
 
-    if (lowestSellPrice < highestBuyPrice)
-      if (lowestSellPrice <= Game.market.credits) {
-        orderId = sellOrders[0].orderId
-        amount = Math.floor(Game.market.credits / lowestSellPrice)
-      } else {
-        // cannot hustle, will not market on bad prices
-        return ERR_NOT_FOUND
-      }
-    }
+    Game.market.deal(sellOrders[0].id, amount)
+    Game.market.deal(buyOrders[0].id, amount)
+
+    return OK
   }
 
-  if (orderId && amount) {
-    const rc = Game.market.deal(orderId, amount)
-    if (rc !== OK) {
-      console.log('Deal on order [' + orderId + '] failed with rc [' + rc + ']')
-    }
+  const wantToSell = hasPixels - PIXELS_TO_KEEP
+  if (wantToSell <= 0) {
+    return ERR_NOT_ENOUGH_RESOURCES
   }
+
+  // there are no crazy and/or affordable prices
+  const howLowToSell = lowestSalePrice * (1.0 - PIXELS_DISCOUNT)
+  if (highestBuyPrice >= howLowToSell) {
+    const amount = Math.min(buyOrders[0].amount, wantToSell)
+    return Game.market.deal(buyOrders[0].id, amount)
+  }
+
+  return ERR_NOT_IN_RANGE
 }
 
 const generatePixel = function () {
