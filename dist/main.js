@@ -1131,7 +1131,7 @@ Room.prototype.buildFromPlan = function () {
   const plan = plans[this.memory.maxLevel || this.__level__]
   if (plan === undefined) return
 
-  const structures = this.find(FIND_STRUCTURES)
+  const structures = _.filter(this.find(FIND_STRUCTURES), s => (s.my || true))
   const constructionSites = this.find(FIND_CONSTRUCTION_SITES)
 
   let constructionSitesCreated = false
@@ -1198,6 +1198,8 @@ Room.prototype.buildFromPlan = function () {
   if (!this.__emergency__ && (this.__level__ >= maxLevel) && !hasConstructionSites) {
     for (const structure of structures) {
       if (structure.structureType === STRUCTURE_CONTROLLER) continue
+      if (structure.structureType === STRUCTURE_EXTRACTOR) continue
+
       if (structure.__according_to_plan__) continue
       if (structure.__destroy__) continue
 
