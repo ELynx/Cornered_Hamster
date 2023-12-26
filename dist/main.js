@@ -13,6 +13,8 @@ const ROOM_PLANS = {
     5: '룃⡂⢂⣂⤂⥃⥄ᢃᤃᤄ飃', // -//-
     6: '룃⡂⢂⣂⤂⥃⥄ᢃᤃᤄ飃', // -//-
     7: '룃뤂⢂⣂⥃⥄ᢃᤃᤄ飃餂飂', // mutate extension into spawn + spawn rampart, mutate extension into terminal + terminal rampart
+    // TODO do not create lab until power is activated
+    // TODO rethink and reorder 8+
     8: '뤂뢂뢃硂顂颂飂餂颃飃餃楃饃ꢄ䤄餄襄饄', // end build with 1 wall road
     9: '뤂뢂뢃硂顂颂飂餂颃飃餃楃饃ꢄ䤄餄襄饄ꢅ' // end build with 2 wall roads
   }
@@ -24,17 +26,17 @@ if (Game.rooms.sim) {
 }
 
 module.exports.loop = function () {
-  processRoomEventLogs() // first because activates safe mode
+  handleRoomEventLogs() // first because activates safe mode
   handleRoomStates() // second because set flags used in other code
   controlCreeps()
   performAutobuild()
-  generatePixel()
+  performTrading()
   clearMemory()
 }
 
-const processRoomEventLogs = function () {
+const handleRoomEventLogs = function () {
   for (const roomName in Game.rooms) {
-    processRoomEventLog(Game.rooms[roomName])
+    handleRoomEventLog(Game.rooms[roomName])
   }
 }
 
@@ -837,7 +839,7 @@ const roomEnergyAndEnergyCapacity = function (room) {
   return [energy, Math.max(capacity, SPAWN_ENERGY_CAPACITY)]
 }
 
-const processRoomEventLog = function (room) {
+const handleRoomEventLog = function (room) {
   // for now handle only own controlled rooms
   if (room.controller === undefined) return
   if (!room.controller.my) return
@@ -1319,6 +1321,10 @@ Structure.prototype.decode = function (code) {
   const structureType = IndexToStructureType[index]
 
   return [{ x: xxxxx, y: yyyyyy }, structureType]
+}
+
+const performTrading = function () {
+  generatePixel()
 }
 
 const generatePixel = function () {
