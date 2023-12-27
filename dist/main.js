@@ -1060,40 +1060,6 @@ const indexFromPosition = function (position) {
   return indexFromXY(position.x, position.y)
 }
 
-const positionFromIndex = function (index) {
-  const y = Math.floor(index / 100) - 1
-  const x = index % 100
-  return { x, y }
-}
-
-const findNearToBoth = function (position1, position2) {
-  const nearTo = function (position) {
-    const result = new Array(8)
-    for (let dx = -1; dx <= 1; ++dx) {
-      for (let dy = -1; dy <= 1; ++dy) {
-        if (dx === 0 && dy === 0) continue
-
-        const x = position.x + dx
-        if (x < 0) continue
-        if (x > 49) continue
-
-        const y = position.y + dy
-        if (y < 0) continue
-        if (y > 49) continue
-
-        result.push(indexFromXY(x, y))
-      }
-    }
-    return result
-  }
-
-  const nearTo1 = nearTo(position1)
-  const nearTo2 = nearTo(position2)
-  const nearToBoth = _.intersection(nearTo1, nearTo2)
-
-  return _.map(nearToBoth, positionFromIndex)
-}
-
 Room.prototype.getPlan = function () {
   const structures = this
     .find(FIND_STRUCTURES)
@@ -1116,8 +1082,6 @@ Room.prototype.getPlan = function () {
   }
 
   if (plan === '') {
-    // TODO remove because this is not a valid
-    findNearToBoth({ x: 4, y: 4 }, { x: 12, y: 13 })
     return undefined
   }
 
