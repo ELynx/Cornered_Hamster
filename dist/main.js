@@ -678,15 +678,9 @@ const spawnCreepImpl = function (name1, name2, room, x, y) {
   const creep = creep1 || creep2
 
   // see if body is possible
-  let body = makeBody(room)
+  let [body, cost] = makeBody(room, x, y)
   if (body.length === 0) {
     return ERR_NOT_ENOUGH_RESOURCES
-  }
-
-  // penalty for walling
-  if (room.getTerrain().get(x, y) === TERRAIN_MASK_WALL) {
-    // remove 1st element
-    body = _.rest(body)
   }
 
   // by default, give 1st name
@@ -726,6 +720,7 @@ const spawnCreepImpl = function (name1, name2, room, x, y) {
     const spawnRc = spawn.spawnCreep(body, creepName, { directions: [spawnDirection] })
     if (spawnRc === OK) {
       spawn.__spawned_this_tick__ = true
+      room.__spent__ = (room.__spent__ || 0) - cost
       return OK
     }
   }
@@ -734,36 +729,43 @@ const spawnCreepImpl = function (name1, name2, room, x, y) {
 }
 
 const makeBody = function (room) {
-  if (room.__make_body_cache__) {
-    return room.__make_body_cache__
-  }
-
-  // eslint-disable-next-line no-unused-vars
   const [energy, capacity] = roomEnergyAndEnergyCapacity(room)
-  if (capacity <= 0) return []
+  if (capacity <= 0) return [[], 0]
 
-  // n.b. WORK must be first, to properly penalize
+  // if there is a chance to go up in glory, do it
+  const base = energy > capacity ? energy : capacity
 
   let body = [WORK, WORK, CARRY] // backup for 300 spawn trickle charge
+  let cost = 250
 
-  if (capacity >= 350) {
+  if (base >= 350) {
     body = [WORK, WORK, WORK, CARRY]
+    cost = 350
   }
 
-  if (capacity >= 450) {
+  if (base >= 450) {
     body = [WORK, WORK, WORK, WORK, CARRY]
+    cost = 450
   }
 
-  if (capacity >= 550) {
+  if (base >= 550) {
     body = [WORK, WORK, WORK, WORK, WORK, CARRY]
+    cost = 550
   }
 
-  // TODO lock behind some gate
-  // if (capacity >= 900) {
+  // TODO lock behind some gate, because around level 7 this is possible
+  // if (base >= 900) {
   //  body = [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE]
+  //  cost = 900
   // }
 
-  return (room.__make_body_cache__ = body)
+  // penalty for walling
+  if (room.getTerrain().get(x, y) === TERRAIN_MASK_WALL) {
+    body = _.rest(body)
+    cost -= 100
+  }
+
+  return [body, cost]
 }
 
 const roomEnergyAndEnergyCapacity = function (room) {
@@ -793,7 +795,7 @@ const roomEnergyAndEnergyCapacity = function (room) {
   // n.b. does not accout for power creeps
 
   const creepsInRoom = _.filter(Game.creeps, s => !s.spawning && s.room.name === room.name)
-  let energy = 0
+  let energy = room.__spent__ || 0
   let capacity = 0
 
   for (const spawn of spawns) {
