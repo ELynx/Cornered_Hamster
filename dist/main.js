@@ -1102,98 +1102,99 @@ Room.prototype.getPlan = function () {
   return plan
 }
 
-Room.prototype.buildFromPlan = function () {
-  const plans = ROOM_PLANS[this.name]
-  if (plans === undefined) return
+Room.prototype._buildNoSpawn = function (position, structureType) {
+  if (structureType !== STRUCTURE_SPAWN) {
+    return false
+  }
 
-  const plan = plans[this.memory.maxLevel || this.__level__]
-  if (plan === undefined) return
+  return this._buildNormal(position, structureType, true)
+}
 
-  const structures = _.filter(this.find(FIND_STRUCTURES), s => (s.my || true))
-  const constructionSites = this.find(FIND_CONSTRUCTION_SITES)
+Room.prototype._buildNormal = function (position, structureType, removeObstacles = false) {
+  const structuresAtXY = _.filter(this._structures, s => s.pos.isEqualTo(position.x, position.y))
+  const constructionSitesAtXY = _.filter(this._constructionSites, s => s.pos.isEqualTo(position.x, position.y))
 
-  let constructionSitesCreated = false
+  for (const structure of structuresAtXY) {
+    if (structure.structureType === structureType) {
+      structure.__according_to_plan__ = true
+      return false
+    }
+  }
 
-  for (let i = 0; i < plan.length; ++i) {
-    const code = plan.charCodeAt(i)
-    const [position, structureType] = Structure.prototype.decode(code)
-    if (structureType === undefined) continue
+  for (const constructionSite of constructionSitesAtXY) {
+    if (constructionSite.structureType === structureType) {
+      constructionSite.__according_to_plan__ = true
+      return false
+    }
+  }
 
-    const whenNoSpawn = structureType === STRUCTURE_SPAWN || structureType === STRUCTURE_WALL
-    if (this.__no_spawn__ && !whenNoSpawn) continue
+  let positionBusy = false
 
-    const structuresAtXY = _.filter(structures, s => s.pos.isEqualTo(position.x, position.y))
-    const constructionSitesAtXY = _.filter(constructionSites, s => s.pos.isEqualTo(position.x, position.y))
-
-    let builtOrPlanned = false
-
+  if (removeObstacles) {
     for (const structure of structuresAtXY) {
-      if (structure.structureType === structureType) {
-        structure.__according_to_plan__ = true
-        builtOrPlanned = true
-        break
-      }
-    }
-
-    for (const constructionSite of constructionSitesAtXY) {
-      if (constructionSite.structureType === structureType) {
-        constructionSite.__according_to_plan__ = true
-        builtOrPlanned = true
-        break
-      }
-    }
-
-    if (structureType === STRUCTURE_WALL) {
-      const flagName = `worker'${this.name}${_.padLeft(position.x, 2, '0')}${_.padLeft(position.y, 2, '0')}${_.padLeft(i, 2, '0')}`
-      const flag = Game.flags[flagName]
-      if (flag &&
-          flag.pos.roomName === this.name &&
-          flag.pos.x === position.x &&
-          flag.pos.y === position.y &&
-          flag.color === COLOR_YELLOW &&
-          flag.secondaryColor === COLOR_YELLOW) {
-        flag.__according_to_plan__ = true
-      } else {
-        // no need to tag, will appear only on next tick
-        this.createFlag(position.x, position.y, flagName, COLOR_YELLOW, COLOR_YELLOW)
-      }
-
-      builtOrPlanned = true
-    }
-
-    if (builtOrPlanned) continue
-
-    let positionBusy = false
-
-    if (this.__no_spawn__) {
-      for (const structure of structuresAtXY) {
-        if (_.some(OBSTACLE_OBJECT_TYPES, _.matches(structure.structureType))) {
-          structure.__destroy__ = true
-          positionBusy = true
-        }
-      }
-
-      for (const constructionSite of constructionSitesAtXY) {
-        constructionSite.__destroy__ = true
+      if (_.some(OBSTACLE_OBJECT_TYPES, _.matches(structure.structureType))) {
+        structure.__destroy__ = true
         positionBusy = true
       }
     }
 
-    if (positionBusy) continue
-
-    const rc = this.createConstructionSite(position.x, position.y, structureType)
-    constructionSitesCreated = constructionSitesCreated || (rc === OK)
+    for (const constructionSite of constructionSitesAtXY) {
+      constructionSite.__destroy__ = true
+      positionBusy = true
+    }
   }
 
-  const maxLevel = this.memory.maxLevel || 0
-  const hasConstructionSites = constructionSitesCreated || (constructionSites.length > 0)
-  const hasPlannedSpawns = _.some(structures, s => s.structureType === STRUCTURE_SPAWN && s.__according_to_plan__ && s.__destroy__ !== true)
+  if (positionBusy) {
+    return false
+  }
 
-  // replace outside of emergencies
+  const rc = this.createConstructionSite(position.x, position.y, structureType)
+  return rc === OK
+}
+
+Room.prototype._buildFlag = function (position, structureType, index) {
+  if (structureType !== STRUCTURE_WALL) {
+    return false
+  }
+
+  const flagName = `worker'${this.name}${_.padLeft(position.x, 2, '0')}${_.padLeft(position.y, 2, '0')}${_.padLeft(index, 2, '0')}`
+  const flag = Game.flags[flagName]
+
+  if (flag) {
+    if (flag.pos.roomName === this.name &&
+        flag.pos.x === position.x &&
+        flag.pos.y === position.y &&
+        flag.color === COLOR_YELLOW &&
+        flag.secondaryColor === COLOR_YELLOW) {
+      flag.__according_to_plan__ = true
+    }
+
+    return false
+  }
+
+  // no need to tag, will appear only on next tick
+  const rc = this.createFlag(position.x, position.y, flagName, COLOR_YELLOW, COLOR_YELLOW)
+  return rc === OK
+}
+
+Room.prototype._handleNotPlanned = function () {
+    // replace only outside of emergencies
+  if (this.__emergency__) {
+    return
+  }
+
   // replace only with higher level plans
+  const maxLevel = this.memory.maxLevel || 0
+  if (this.__level__ < maxLevel) {
+    return
+  }
+
+  const hasConstructionSites = this._constructionSitesCreated || (this._constructionSites.length > 0)
+  const hasPlannedSpawns = _.some(this._structures, s => s.structureType === STRUCTURE_SPAWN && s.__according_to_plan__ && s.__destroy__ !== true)
+
   // replace one by one
-  if (!this.__emergency__ && (this.__level__ >= maxLevel) && !hasConstructionSites) {
-    for (const structure of structures) {
+  if (!hasConstructionSites) {
+    for (const structure of this._structures) {
       if (structure.structureType === STRUCTURE_CONTROLLER) continue
       if (structure.structureType === STRUCTURE_EXTRACTOR) continue
 
@@ -1203,7 +1204,7 @@ Room.prototype.buildFromPlan = function () {
       // no doubts over non-spawn
       if (structure.structureType !== STRUCTURE_SPAWN) {
         structure.__destroy__ = true
-        break // one at a time
+        break // add one at a time
       }
 
       // spawn that is not according to plan
@@ -1211,58 +1212,54 @@ Room.prototype.buildFromPlan = function () {
       // only if there are spawns according to plan
       if (hasPlannedSpawns) {
         structure.__destroy__ = true
-        break // one at a time
+        break // add one at a time
       }
     }
   }
 
-  // replace outside of emergencies
-  // replace only with higher level plans
-  if (!this.__emergency__ && (this.__level__ >= maxLevel)) {
-    for (const constructionSite of constructionSites) {
-      if (constructionSite.__according_to_plan__) continue
-      if (constructionSite.__destroy__) continue
+  for (const constructionSite of this._constructionSites) {
+    if (constructionSite.__according_to_plan__) continue
+    if (constructionSite.__destroy__) continue
 
-      // no doubts over non-spawn
-      if (constructionSite.structureType !== STRUCTURE_SPAWN) {
-        constructionSite.__destroy__ = true
-      }
-
-      // spawn construction site that is not according to plan
-
-      // only if there are spawns according to plan
-      if (hasPlannedSpawns) {
-        constructionSite.__destroy__ = true
-      }
+    // no doubts over non-spawn
+    if (constructionSite.structureType !== STRUCTURE_SPAWN) {
+      constructionSite.__destroy__ = true
     }
 
-    for (const flagName in Game.flags) {
-      const flag = Game.flags[flagName]
-      if (flag.__according_to_plan__) continue
-      if (flag.__destroy__) continue
+    // spawn construction site that is not according to plan
 
-      flag.__destroy__ = true
+    // only if there are spawns according to plan
+    if (hasPlannedSpawns) {
+      constructionSite.__destroy__ = true
     }
   }
 
+  for (const flag of Game.valueFlags) {
+    if (flag.__according_to_plan__) continue
+    if (flag.__destroy__) continue
+
+    flag.__destroy__ = true
+  }
+}
+
+Room.prototype._handleToBeDestroyed = function () {
   let destroyed = false
 
-  for (const structure of structures) {
+  for (const structure of this._structures) {
     if (structure.__destroy__) {
       const rc = structure.destroy()
       destroyed = destroyed || (rc === OK)
     }
   }
 
-  for (const constructionSite of constructionSites) {
+  for (const constructionSite of this._constructionSites) {
     if (constructionSite.__destroy__) {
       const rc = constructionSite.remove()
       destroyed = destroyed || (rc === OK)
     }
   }
 
-  for (const flagName in Game.flags) {
-    const flag = Game.flags[flagName]
+  for (const flag of Game.valueFlags) {
     if (flag.__destroy__) {
       const rc = flag.remove()
       destroyed = destroyed || (rc === OK)
@@ -1272,6 +1269,46 @@ Room.prototype.buildFromPlan = function () {
   if (destroyed) {
     Memory.forceAutobuild = true
   }
+}
+
+Room.prototype.buildFromPlan = function () {
+  const plans = ROOM_PLANS[this.name]
+  if (plans === undefined) return
+
+  const plan = plans[this.memory.maxLevel || this.__level__]
+  if (plan === undefined) return
+
+  this._structures = _.filter(this.find(FIND_STRUCTURES), s => (s.my || true))
+  this._constructionSites = this.find(FIND_CONSTRUCTION_SITES)
+
+  let constructionSitesCreated = false
+
+  for (let i = 0; i < plan.length; ++i) {
+    const code = plan.charCodeAt(i)
+    const [position, structureType] = Structure.prototype.decode(code)
+    if (structureType === undefined) continue
+
+    let constructionSiteCreated = false
+
+    if (this.__no_spawn__) {
+      constructionSiteCreated = this._buildNoSpawn(position, structureType)
+    } else {
+      constructionSiteCreated = this._buildNormal(position, structureType)
+    }
+
+    constructionSitesCreated = constructionSitesCreated || constructionSiteCreated
+
+    this._buildFlag(position, structureType, i)
+  }
+
+  this._constructionSitesCreated = constructionSitesCreated
+
+  this._handleNotPlanned()
+  this._handleToBeDestroyed()
+
+  this._structures = undefined
+  this._constructionSites = undefined
+  this._constructionSitesCreated = undefined
 }
 
 const StructureTypeToIndex = {
