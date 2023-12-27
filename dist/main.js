@@ -766,7 +766,7 @@ const spawnCreepImpl = function (name1, name2, room, x, y) {
   return ERR_NOT_FOUND
 }
 
-const makeBody = function (room) {
+const makeBody = function (room, x, y) {
   const [energy, capacity] = roomEnergyAndEnergyCapacity(room)
   if (capacity <= 0) return [[], 0]
 
