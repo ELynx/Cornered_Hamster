@@ -1114,15 +1114,15 @@ Room.prototype.buildFromPlan = function () {
     if (structureType === STRUCTURE_WALL) {
       const flagName = 'worker' + this.name + _.padLeft(position.x, 2, '0') + _.padLeft(position.y, 2, '0')
       const flag = Game.flags[flagName]
-      if (flag) {
-        if (flag.pos.roomName !== this.name || flag.pos.x !== position.x || flag.pos.y !== position.y) {
-          flag.setPosition(new RoomPosition(position.x, position.y, this.name))
-        }
-
-        if (flag.color != COLOR_YELLOW || flag.secondaryColor != COLOR_YELLOW) {
-          flag.setColor(COLOR_YELLOW, COLOR_YELLOW)
-        }
+        if (flag &&
+          flag.pos.roomName === this.name &&
+          flag.pos.x === position.x &&
+          flag.pos.y === position.y &&
+          flag.color === COLOR_YELLOW &&
+          flag.secondaryColor === COLOR_YELLOW) {
+          flag.__according_to_plan__ = true
       } else {
+        // no need to tag, will appear only on next tick
         this.createFlag(position.x, position.y, flagName, COLOR_YELLOW, COLOR_YELLOW)
       }
 
@@ -1203,6 +1203,14 @@ Room.prototype.buildFromPlan = function () {
         constructionSite.__destroy__ = true
       }
     }
+
+    for (const flagName in Game.flags) {
+      const flag = Game.flags[flagName]
+      if (flag.__according_to_plan__) continue
+      if (flag.__destroy__) continue
+
+      flag.__destroy__ = true
+    }
   }
 
   let destroyed = false
@@ -1217,6 +1225,14 @@ Room.prototype.buildFromPlan = function () {
   for (const constructionSite of constructionSites) {
     if (constructionSite.__destroy__) {
       const rc = constructionSite.remove()
+      destroyed = destroyed || (rc === OK)
+    }
+  }
+
+  for (const flagName in Game.flags) {
+    const flag = Game.flags[flagName]
+    if (flag.__destroy__) {
+      const rc = flag.remove()
       destroyed = destroyed || (rc === OK)
     }
   }
