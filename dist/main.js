@@ -1111,6 +1111,10 @@ Room.prototype._buildNoSpawn = function (position, structureType) {
 }
 
 Room.prototype._buildNormal = function (position, structureType, removeObstacles = false) {
+  if (structureType === STRUCTURE_WALL) {
+    return false
+  }
+
   const structuresAtXY = _.filter(this._structures, s => s.pos.isEqualTo(position.x, position.y))
   const constructionSitesAtXY = _.filter(this._constructionSites, s => s.pos.isEqualTo(position.x, position.y))
 
