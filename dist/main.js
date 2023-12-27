@@ -854,6 +854,7 @@ const roomEnergyAndEnergyCapacity = function (room) {
   // n.b. expect that all creeps do restock
   // n.b. does not accout for power creeps
 
+  // TODO consider power creeps
   const creepsInRoom = _.filter(Game.creeps, s => !s.spawning && s.room.name === room.name)
   let energy = room.__spent__ || 0
   let capacity = 0
