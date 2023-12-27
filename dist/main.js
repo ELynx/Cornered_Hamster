@@ -28,36 +28,42 @@ if (Game.rooms.sim) {
 }
 
 module.exports.loop = function () {
+  makeShortcuts()
+
   handleEventLogs() // first because activates safe mode
   handleStates() // second because set flags used in other code
   controlCreeps()
   performAutobuild()
   performTrading()
+
   clearMemory()
 }
 
+const makeShortcuts = function () {
+  Game.valueRooms = _.shuffle(_.values(Game.rooms))
+  Game.valueFlags = _.shuffle(_.values(Game.flags))
+  Game.valueCreeps = _.shuffle(_.values(Game.creeps))
+  Game.valueSpawns = _.shuffle(_.values(Game.spawns))
+}
+
 const handleEventLogs = function () {
-  for (const roomName in Game.rooms) {
-    handleRoomEventLog(Game.rooms[roomName])
+  for (const room of Game.valueRooms) {
+    handleRoomEventLog(room)
   }
 }
 
 const handleStates = function () {
-  for (const roomName in Game.rooms) {
-    handleRoomState(Game.rooms[roomName])
+  for (const room of Game.valueRooms) {
+    handleRoomState(room)
   }
 }
 
 const controlCreeps = function () {
-  // to resolve potential softlocks
-  const flags = _.shuffle(_.values(Game.flags))
-  for (const flag of flags) {
+  for (const flag of Game.valueFlags) {
     spawnCreepByFlag(flag)
   }
 
-  // to resolve potential softlocks
-  const creeps = _.shuffle(_.values(Game.creeps))
-  for (const creep of creeps) {
+  for (const creep of Game.valueCreeps) {
     if (creep.spawning) continue
 
     creep.__work__ = creep.getActiveBodyparts(WORK)
@@ -701,9 +707,7 @@ const spawnCreepImpl = function (name1, name2, room, x, y) {
 
   const queue = []
 
-  for (const spawnName in Game.spawns) {
-    const spawn = Game.spawns[spawnName]
-
+  for (const spawn of Game.valueSpawns) {
     if (spawn.room.name !== room.name) continue
     if (!spawn.pos.isNearTo(x, y)) continue
 
@@ -1023,20 +1027,13 @@ StructureController.prototype.canActivateSafeMode = function () {
 
 const performAutobuild = function () {
   const force = Memory.forceAutobuild === true
-  const period = Game.rooms.sim ? 10 : CREEP_LIFE_TIME
+  const timer = Game.time % (Game.rooms.sim ? 10 : CREEP_LIFE_TIME) === 0
 
   Memory.forceAutobuild = undefined
 
-  if (force || (Game.time % period === 0)) {
-    for (const roomName in Game.rooms) {
-      Game.rooms[roomName].buildFromPlan()
-    }
-  } else {
-    for (const roomName in Game.rooms) {
-      const room = Game.rooms[roomName]
-      if (room.__no_spawn__) {
-        room.buildFromPlan()
-      }
+  for (const room of Game.valueRooms) {
+    if (room.__no_spawn__ || force || timer) {
+      room.buildFromPlan()
     }
   }
 }
@@ -1315,8 +1312,8 @@ Structure.prototype.decode = function (code) {
 }
 
 const performTrading = function () {
-  for (const roomName in Game.rooms) {
-    performRoomTrading(Game.rooms[roomName])
+  for (const room of Game.valueRooms) {
+    performRoomTrading(room)
   }
 
   performIntershardResourcesTrading()
@@ -1401,16 +1398,16 @@ const clearMemory = function () {
   Memory.flags = undefined
   Memory.spawns = undefined
 
-  for (const name in Memory.rooms) {
-    if (Game.rooms[name]) {
-      Memory.rooms[name] = _.pick(
-        Memory.rooms[name],
+  for (const roomName in Memory.rooms) {
+    if (Game.rooms[roomName]) {
+      Memory.rooms[roomName] = _.pick(
+        Memory.rooms[roomName],
         [
           'maxLevel'
         ]
       )
     } else {
-      Memory.rooms[name] = undefined
+      Memory.rooms[roomName] = undefined
     }
   }
 }
