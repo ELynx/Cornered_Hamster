@@ -467,6 +467,14 @@ const spawnCreep = function (creepName, room, x, y) {
 }
 
 const spawnCreepXgate = function (room, x, y) {
+  if (!room.controller || !room.controller.my) {
+    return ERR_NOT_OWNER
+  }
+
+  if (room.valueSpawns.length === 0) {
+    return ERR_NOT_FOUND
+  }
+
   const structures = room.find(FIND_STRUCTURES)
 
   const structuresAtXY = _.filter(structures, s => s.pos.isEqualTo(x, y))
@@ -973,34 +981,26 @@ const activateSafeMode = function (room) {
 }
 
 const handleRoomState = function (room) {
-  if (room.controller === undefined) {
+  if (!room.controller || !room.controller.my) {
     room.__level__ = 0
+    room.memory.maxLevel = undefined
+    return
   }
 
-  if (!room.controller.my) {
-    room.__level__ = 0
-  }
-
-  if (room.__level__ === undefined) {
-    room.__level__ = room.controller.level
-  }
+  room.__level__ = room.controller.level
 
   if (room.__level__ === 8 && room.controller.isPowerEnabled) {
     room.__level__ = 9
   }
 
   // TODO release level 8 after invent how to manage
-  if (room.__level__ && room.__level__ > 7) {
+  if (room.__level__ > 7) {
     room.__level__ = 7
   }
 
-  if (room.__level__ > 0) {
-    const maxLevel = room.memory.maxLevel || 0
-    if (maxLevel < room.__level__) {
-      room.memory.maxLevel = room.__level__
-    }
-  } else {
-    room.memory.maxLevel = undefined
+  const maxLevel = room.memory.maxLevel || 0
+  if (maxLevel < room.__level__) {
+    room.memory.maxLevel = room.__level__
   }
 
   // detect and handle no spawn state
@@ -1036,14 +1036,13 @@ const handleRoomState = function (room) {
 
   // cancel out invasion
   if (room.__safe_mode_active__) {
-    room.__invasion__ = false
-    room.__invasion_pc__ = false
-    room.__invasion_npc__ = false
+    room.__invasion__ = undefined
+    room.__invasion_pc__ = undefined
+    room.__invasion_npc__ = undefined
   }
 
   if (room.__no_spawn__) room.__emergency__ = true
-  else if (room.__invasion__) room.__emergency__ = true
-  else room.__emergency__ = false
+  if (room.__invasion__) room.__emergency__ = true
 }
 
 StructureController.prototype.canActivateSafeMode = function () {
