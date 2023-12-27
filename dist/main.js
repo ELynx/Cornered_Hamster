@@ -251,7 +251,8 @@ const shareEnergy = function (creep) {
 
   const mine = _.filter(targets, s => s.my)
 
-  const empty = _.filter(mine, s => s.store.getUsedCapacity(RESOURCE_ENERGY) === 0)
+  // hope that shuffle will get them in right order
+  const empty = _.filter(mine, s => s.__gated__ || s.store.getUsedCapacity(RESOURCE_ENERGY) === 0)
 
   const inRange = _.filter(empty, s => s.pos.isNearTo(creep))
   if (inRange.length === 0) {
@@ -277,6 +278,7 @@ const repair = function (creep) {
 
   const gateRc = creepXenergyXgate(creep, REPAIR_POWER * REPAIR_COST)
   if (gateRc !== OK) {
+    creep.__gated__ = true
     return gateRc
   }
 
@@ -302,6 +304,7 @@ const build = function (creep) {
 
   const gateRc = creepXenergyXgate(creep, BUILD_POWER)
   if (gateRc !== OK) {
+    creep.__gated__ = true
     return gateRc
   }
 
