@@ -112,11 +112,11 @@ const work = function (creep) {
   grabEnergy(creep)
   upgradeController(creep)
   restockEnergy(creep)
-  shareEnergy(creep)
   repair(creep)
   build(creep)
   harvest(creep)
   dismantle(creep)
+  shareEnergy(creep)
   cancelConstructionSites(creep)
   handleInvasion(creep)
   moveAround(creep)
@@ -185,7 +185,12 @@ const getBoosted = function (creep) {
 }
 
 const grabEnergy = function (creep) {
-  return grab(creep, RESOURCE_ENERGY)
+  const rc = grab(creep, RESOURCE_ENERGY)
+  if (rc === OK) {
+    creep.__energy_income__ = true
+  }
+
+  return rc
 }
 
 const upgradeController = function (creep) {
@@ -239,6 +244,10 @@ const SHARE_FRACTION = 2
 const shareEnergy = function (creep) {
   if (creep.__pipeline_transfer__) {
     return ERR_BUSY
+  }
+
+  if (!creep.__energy_income__ || creep.__gated__) {
+    return ERR_NOT_ENOUGH_RESOURCES
   }
 
   const hasEnergy = creep.store.getUsedCapacity(RESOURCE_ENERGY)
@@ -345,6 +354,7 @@ const harvest = function (creep) {
   const rc = creep.harvest(_.sample(inRange))
   if (rc === OK) {
     creep.__pipeline_1__ = 1
+    creep.__energy_income__ = true
   }
 
   return rc
@@ -373,6 +383,7 @@ const dismantle = function (creep) {
   const rc = creep.dismantle(_.sample(inRange))
   if (rc === OK) {
     creep.__pipeline_1__ = 5
+    creep.__energy_income__ = true
   }
 
   return rc
