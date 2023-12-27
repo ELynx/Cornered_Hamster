@@ -1359,7 +1359,7 @@ const performIntershardResourcesTrading = function () {
 
   const allSellOrders = Game.market.getAllOrders({ type: ORDER_SELL, resourceType: PIXEL })
   const allBuyOrders = Game.market.getAllOrders({ type: ORDER_BUY, resourceType: PIXEL })
-  
+
   if (allSellOrders.length === 0 || allBuyOrders.length === 0) {
     // cannot make informed market decisions, leave
     return ERR_NOT_FOUND
@@ -1369,7 +1369,6 @@ const performIntershardResourcesTrading = function () {
   const sellOrders = _.sortByOrder(allSellOrders, ['price'], ['asc'])
   const buyOrders = _.sortByOrder(allBuyOrders, ['price'], ['desc'])
 
-  
   const lowestSalePrice = sellOrders[0].price
   const highestBuyPrice = buyOrders[0].price
 
