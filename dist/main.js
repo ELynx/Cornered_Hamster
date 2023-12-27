@@ -5,16 +5,17 @@ let forcedControllerSign = true // once in code load force the sign, it is visib
 
 const ROOM_PLANS = {
   E56N59: {
-    0: '룃', // spawn
-    1: '룃', // spawn
-    2: '룃⢂⣂⤂⥃⥄', // spawn + 5 extensions
-    3: '룃⡂⢂⣂⤂⥃⥄', // spawn + 6 extensions
-    4: '룃⡂⢂⣂⤂⥃⥄ᢃᤃᤄ飃', // spawn + 6 extensions + 3 containers + spawn rampart
-    5: '룃⡂⢂⣂⤂⥃⥄ᢃᤃᤄ飃', // -//-
-    6: '룃⡂⢂⣂⤂⥃⥄ᢃᤃᤄ飃', // -//-
-    7: '룃뤂⡂⢂⥃⥄ᢃᤃᤄ飃餂飂', // mutate extension into spawn + spawn rampart, mutate extension into terminal + terminal rampart
+    0: 'ࢃःऄ룃', // spawn
+    1: 'ࢃःऄ룃', // spawn
+    2: 'ࢃःऄ룃⢂⣂⤂⥃⥄', // spawn + 5 extensions
+    3: 'ࢃःऄ룃⡂⢂⣂⤂⥃⥄', // spawn + 6 extensions
+    4: 'ࢃःऄ룃⡂⢂⣂⤂⥃⥄ᢃᤃᤄ飃', // spawn + 6 extensions + 3 containers + spawn rampart
+    5: 'ࢃःऄ룃⡂⢂⣂⤂⥃⥄ᢃᤃᤄ飃', // -//-
+    6: 'ࢃःऄ룃⡂⢂⣂⤂⥃⥄ᢃᤃᤄ飃', // -//-
+    7: 'ࢃःऄ룃뤂⡂⢂⥃⥄ᢃᤃᤄ飃餂飂', // mutate extension into spawn + spawn rampart, mutate extension into terminal + terminal rampart
     // TODO do not create lab until power is activated
     // TODO rethink and reorder 8+
+    // TODO position workers
     8: '뤂뢂뢃硂顂颂飂餂颃飃餃楃饃ꢄ䤄餄襄饄', // end build with 1 wall road
     9: '뤂뢂뢃硂顂颂飂餂颃飃餃楃饃ꢄ䤄餄襄饄ꢅ' // end build with 2 wall roads
   }
