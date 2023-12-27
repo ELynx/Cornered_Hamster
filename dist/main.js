@@ -719,7 +719,7 @@ const spawnCreepImpl = function (name1, name2, room, x, y) {
   const creep = creep1 || creep2
 
   // see if body is possible
-  let [body, cost] = makeBody(room, x, y)
+  const [body, cost] = makeBody(room, x, y)
   if (body.length === 0) {
     return ERR_NOT_ENOUGH_RESOURCES
   }
@@ -1179,7 +1179,7 @@ Room.prototype._buildFlag = function (position, structureType, index) {
 }
 
 Room.prototype._handleNotPlanned = function () {
-    // replace only outside of emergencies
+  // replace only outside of emergencies
   if (this.__emergency__) {
     return
   }
