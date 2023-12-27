@@ -1175,7 +1175,7 @@ Room.prototype._buildFlag = function (position, structureType, index) {
     return false
   }
 
-  const flagName = `worker'${this.name}${_.padLeft(position.x, 2, '0')}${_.padLeft(position.y, 2, '0')}${_.padLeft(index, 2, '0')}`
+  const flagName = `worker${this.name}${_.padLeft(position.x, 2, '0')}${_.padLeft(position.y, 2, '0')}${_.padLeft(index, 2, '0')}`
   const flag = Game.flags[flagName]
 
   if (flag) {
