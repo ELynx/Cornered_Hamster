@@ -3,6 +3,7 @@ console.log('Code loaded')
 const CONTROLLER_SIGN_TEXT = 'https://github.com/ELynx/Cornered_Hamster'
 let forcedControllerSign = true // once in code load force the sign, it is visible on new world map
 
+// TODO position in in string encodes creep type
 const ROOM_PLANS = {
   E56N59: {
     0: 'ࢃःऄ룃', // spawn
