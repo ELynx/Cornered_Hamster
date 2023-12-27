@@ -1114,13 +1114,13 @@ Room.prototype.buildFromPlan = function () {
     if (structureType === STRUCTURE_WALL) {
       const flagName = 'worker' + this.name + _.padLeft(position.x, 2, '0') + _.padLeft(position.y, 2, '0')
       const flag = Game.flags[flagName]
-        if (flag &&
+      if (flag &&
           flag.pos.roomName === this.name &&
           flag.pos.x === position.x &&
           flag.pos.y === position.y &&
           flag.color === COLOR_YELLOW &&
           flag.secondaryColor === COLOR_YELLOW) {
-          flag.__according_to_plan__ = true
+        flag.__according_to_plan__ = true
       } else {
         // no need to tag, will appear only on next tick
         this.createFlag(position.x, position.y, flagName, COLOR_YELLOW, COLOR_YELLOW)
