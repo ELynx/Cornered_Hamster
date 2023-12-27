@@ -11,6 +11,7 @@
       "BODYPART_COST",
       "BUILD_POWER",
       "CARRY",
+      "COLOR_YELLOW",
       "CONSTRUCTION_COST",
       "CONTROLLER_STRUCTURES",
       "CREEP_LIFE_TIME",

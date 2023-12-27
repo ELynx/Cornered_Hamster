@@ -1141,7 +1141,8 @@ Room.prototype.buildFromPlan = function () {
     const [position, structureType] = Structure.prototype.decode(code)
     if (structureType === undefined) continue
 
-    if (this.__no_spawn__ && structureType !== STRUCTURE_SPAWN) continue
+    const whenNoSpawn = structureType === STRUCTURE_SPAWN || structureType === STRUCTURE_WALL
+    if (this.__no_spawn__ && !whenNoSpawn) continue
 
     const structuresAtXY = _.filter(structures, s => s.pos.isEqualTo(position.x, position.y))
     const constructionSitesAtXY = _.filter(constructionSites, s => s.pos.isEqualTo(position.x, position.y))
@@ -1162,6 +1163,24 @@ Room.prototype.buildFromPlan = function () {
         builtOrPlanned = true
         break
       }
+    }
+
+    if (structureType === STRUCTURE_WALL) {
+      const flagName = 'worker' + this.name + _.padLeft(position.x, 2, '0') + _.padLeft(position.y, 2, '0')
+      const flag = Game.flags[flagName]
+      if (flag) {
+        if (flag.pos.roomName !== this.name || flag.pos.x !== position.x || flag.pos.y !== position.y) {
+          flag.setPosition(new RoomPosition(position.x, position.y, this.name))
+        }
+
+        if (flag.color != COLOR_YELLOW || flag.secondaryColor != COLOR_YELLOW) {
+          flag.setColor(COLOR_YELLOW, COLOR_YELLOW)
+        }
+      } else {
+        this.createFlag(position.x, position.y, flagName, COLOR_YELLOW, COLOR_YELLOW)
+      }
+
+      builtOrPlanned = true
     }
 
     if (builtOrPlanned) continue
