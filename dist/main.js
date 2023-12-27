@@ -47,21 +47,19 @@ const handleStates = function () {
 }
 
 const controlCreeps = function () {
-  // TODO replace old spawn logic
   // to resolve potential softlocks
-  const flagNames = _.shuffle(_.keys(Game.flags))
-  for (const flagName of flagNames) {
-    getCreepByFlagName(flagName)
+  const flags = _.shuffle(_.values(Game.flags))
+  for (const flag of flags) {
+    spawnCreepByFlag(flag)
   }
 
   // to resolve potential softlocks
-  const creepNames = _.shuffle(_.keys(Game.creeps))
-  for (const creepName of creepNames) {
-    const creep = Game.creeps[creepName]
+  const creeps = _.shuffle(_.values(Game.creeps))
+  for (const creep of creeps) {
     if (creep.spawning) continue
 
     creep.__work__ = creep.getActiveBodyparts(WORK)
-    creep.__legs__ = creep.getActiveBodyparts(MOVE)
+    creep.__move__ = creep.getActiveBodyparts(MOVE)
 
     if (creep.__work__ > 0) {
       work(creep)
@@ -398,51 +396,34 @@ const handleInvasion = function (creep) {
 }
 
 const moveAround = function (creep) {
-  if (!creep.__legs__) {
+  if (!creep.__move__) {
     return ERR_INVALID_TARGET
   }
 
   return ERR_BUSY
 }
 
-const getCreepByFlagName = function (flagName) {
-  const flag = Game.flags[flagName]
-  if (flag === undefined) {
-    return undefined
-  }
-
+const spawnCreepByFlag = function (flag) {
   if (flag.room === undefined) {
-    return undefined
+    return ERR_NOT_IN_RANGE
   }
 
-  return getCreep(flagName, flag.room, flag.pos.x, flag.pos.y)
+  return spawnCreep(flag.name, flag.room, flag.pos.x, flag.pos.y)
 }
 
-const getCreep = function (creepName, room, x, y) {
-  const gateRc = getCreepXgate(room, x, y)
+const spawnCreep = function (creepName, room, x, y) {
+  const gateRc = spawnCreepXgate(room, x, y)
   if (gateRc !== OK) {
-    return undefined
+    return gateRc
   }
 
   const name1 = creepName
   const name2 = makeAlternativeName(creepName)
 
-  maybeSpawnCreep(name1, name2, room, x, y)
-
-  const creep1 = Game.creeps[name1]
-  if (creep1 && !creep1.spawning) {
-    return creep1
-  }
-
-  const creep2 = Game.creeps[name2]
-  if (creep2 && !creep2.spawning) {
-    return creep2
-  }
-
-  return undefined
+  return spawnCreepImpl(name1, name2, room, x, y)
 }
 
-const getCreepXgate = function (room, x, y) {
+const spawnCreepXgate = function (room, x, y) {
   const structures = room.find(FIND_STRUCTURES)
 
   const structuresAtXY = _.filter(structures, s => s.pos.isEqualTo(x, y))
@@ -667,7 +648,7 @@ const makeAlternativeName = function (name) {
   }
 }
 
-const maybeSpawnCreep = function (name1, name2, room, x, y) {
+const spawnCreepImpl = function (name1, name2, room, x, y) {
   // nope out
   if (room.__invasion_npc__) {
     return ERR_BUSY
