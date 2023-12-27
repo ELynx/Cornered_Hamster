@@ -789,32 +789,30 @@ const spawnCreepImpl = function (name1, name2, room, x, y) {
 }
 
 const makeBody = function (room, x, y) {
+  // eslint-disable-next-line no-unused-vars
   const [energy, capacity] = roomEnergyAndEnergyCapacity(room)
   if (capacity <= 0) return [[], 0]
-
-  // if there is a chance to go up in glory, do it
-  const base = energy > capacity ? energy : capacity
 
   let body = [WORK, WORK, CARRY] // backup for 300 spawn trickle charge
   let cost = 250
 
-  if (base >= 350) {
+  if (capacity >= 350) {
     body = [WORK, WORK, WORK, CARRY]
     cost = 350
   }
 
-  if (base >= 450) {
+  if (capacity >= 450) {
     body = [WORK, WORK, WORK, WORK, CARRY]
     cost = 450
   }
 
-  if (base >= 550) {
+  if (capacity >= 550) {
     body = [WORK, WORK, WORK, WORK, WORK, CARRY]
     cost = 550
   }
 
   // TODO lock behind some gate, because around level 7 this is possible
-  // if (base >= 900) {
+  // if (capacity >= 900) {
   //  body = [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE]
   //  cost = 900
   // }
