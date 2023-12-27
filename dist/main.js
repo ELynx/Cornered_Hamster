@@ -66,6 +66,7 @@ const makeShortcuts = function () {
             break
           case STRUCTURE_SPAWN:
             room.valueSpawns.push(structure)
+            break
           default:
             break
         }
