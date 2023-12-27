@@ -1112,7 +1112,7 @@ Room.prototype.buildFromPlan = function () {
     }
 
     if (structureType === STRUCTURE_WALL) {
-      const flagName = 'worker' + this.name + _.padLeft(position.x, 2, '0') + _.padLeft(position.y, 2, '0')
+      const flagName = 'worker' + this.name + _.padLeft(position.x, 2, '0') + _.padLeft(position.y, 2, '0') + _.padLeft(i, 2, '0')
       const flag = Game.flags[flagName]
       if (flag &&
           flag.pos.roomName === this.name &&
