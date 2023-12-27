@@ -43,7 +43,37 @@ const makeShortcuts = function () {
   Game.valueRooms = _.shuffle(_.values(Game.rooms))
   Game.valueFlags = _.shuffle(_.values(Game.flags))
   Game.valueCreeps = _.shuffle(_.values(Game.creeps))
-  Game.valueSpawns = _.shuffle(_.values(Game.spawns))
+  Game.valuePowerCreeps = _.shuffle(_.values(Game.powerCreeps))
+
+  for (const room of Game.valueRooms) {
+    if (room.controller && room.controller.my) {
+      room.valueSpawns = []
+      const structures = room.find(FIND_STRUCTURES)
+
+      for (const structure of structures) {
+        switch (structure.structureType) {
+          case STRUCTURE_LAB:
+            room.lab = structure
+            break
+          case STRUCTURE_NUKER:
+            room.nuker = structure
+            break
+          case STRUCTURE_OBSERVER:
+            room.observer = structure
+            break
+          case STRUCTURE_POWER_SPAWN:
+            room.powerSpawn = structure
+            break
+          case STRUCTURE_SPAWN:
+            room.valueSpawns.push(structure)
+          default:
+            break
+        }
+      }
+
+      room.valueSpawns = _.shuffle(room.valueSpawns)
+    }
+  }
 }
 
 const handleEventLogs = function () {
@@ -707,8 +737,7 @@ const spawnCreepImpl = function (name1, name2, room, x, y) {
 
   const queue = []
 
-  for (const spawn of Game.valueSpawns) {
-    if (spawn.room.name !== room.name) continue
+  for (const spawn of room.valueSpawns) {
     if (!spawn.pos.isNearTo(x, y)) continue
 
     queue.push(spawn)
@@ -974,8 +1003,7 @@ const handleRoomState = function (room) {
   }
 
   // detect and handle no spawn state
-  const structures = room.find(FIND_STRUCTURES)
-  room.__no_spawn__ = !_.some(structures, _.matchesProperty('structureType', STRUCTURE_SPAWN))
+  room.__no_spawn__ = room.valueSpawns.length === 0
 
   // TODO detect power creeps
   const hostiles = _.filter(room.find(FIND_CREEPS), s => !s.my)
