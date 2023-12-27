@@ -22,6 +22,7 @@
       "ERR_NOT_FOUND",
       "ERR_NOT_IN_RANGE",
       "ERR_NOT_OWNER",
+      "ERR_TIRED",
       "EVENT_ATTACK_TYPE_HIT_BACK",
       "EVENT_ATTACK_TYPE_NUKE",
       "EVENT_ATTACK",

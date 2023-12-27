@@ -402,6 +402,10 @@ const moveAround = function (creep) {
     return ERR_INVALID_TARGET
   }
 
+  if (creep.fatigue) {
+    return ERR_TIRED
+  }
+
   return ERR_BUSY
 }
 
