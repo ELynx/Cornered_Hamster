@@ -1448,7 +1448,7 @@ const RESOURCES_TO_KEEP = [
 
 const ENERGY_DISCOUNT = 0.15
 const ENERGY_PER_EMPTY_SOURCE_PER_TRANSACTION = 450
-const ENERGY_EXTRA_COST_TOLERANCE = 0.1
+const ENERGY_EXTRA_COST_TOLERANCE = 0.334
 
 const tradeEnergy = function (room) {
   // precaution, do not overbuy energy
