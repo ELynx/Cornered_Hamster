@@ -1486,7 +1486,7 @@ const tradeEnergy = function (room) {
   const hasEnergy = room.terminal.store.getUsedCapacity(RESOURCE_ENERGY)
   const wantToBuy = Math.max(sources.length, 1) * ENERGY_PER_EMPTY_SOURCE_PER_TRANSACTION
 
-  const viableSellOrders = new Array(sellOrders.length)
+  const viableSellOrders = []
   for (const sellOrder of sellOrders) {
     const cost1000 = Game.market.calcTransactionCost(1000, sellOrder.roomName, room.name)
     const canDeal = Math.floor(1000 * hasEnergy / cost1000)
