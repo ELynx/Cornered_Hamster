@@ -1423,14 +1423,26 @@ Structure.prototype.decode = function (code) {
   return [{ x: xxxxx, y: yyyyyy }, structureType]
 }
 
+const performShardMarketFuzz = function (room) {
+
+}
+
+const performIntershardMarketFuzz = function () {
+  
+}
+
 const performTrading = function () {
   for (const room of Game.valueRooms) {
-    if (room.controller && room.controller.my) {
-      performRoomTrading(room)
-    }
+    if (!room.controller || !room.controller.my) continue
+    if (!room.terminal || room.terminal.cooldown) continue
+
+    if (performRoomTrading(room) === OK) return
+
+    performShardMarketFuzz(room)
   }
 
-  performIntershardResourcesTrading()
+  performPixelTrading()
+  performIntershardMarketFuzz()
 
   generatePixel()
 }
@@ -1450,7 +1462,7 @@ const ENERGY_DISCOUNT = 0.15
 const ENERGY_PER_EMPTY_SOURCE_PER_TRANSACTION = 450
 const ENERGY_EXTRA_COST_TOLERANCE = 0.334
 
-const tradeEnergy = function (room) {
+const buyEnergy = function (room) {
   const hasEnergy = room.terminal.store.getUsedCapacity(RESOURCE_ENERGY)
 
   // precaution, do not overbuy energy
@@ -1523,22 +1535,15 @@ const tradeEnergy = function (room) {
 
   const rc = Game.market.deal(theOrder.id, theOrder.actualAmount, room.name)
   console.log(`Deal with rc [${rc}] for [${theOrder.actualAmount}] energy. Order [${theOrder.id}] from [${theOrder.roomName}]. List price [${theOrder.price}], adjusted price [${theOrder.actualPrice}], cost [${theOrder.energyCost} energy]`)
+  if (rc === OK) {
+    rememberPrice(RESOURCE_ENERGY, theOrder.price)
+  }
+
   return rc
 }
 
 const performRoomTrading = function (room) {
-  if (!room.terminal) {
-    return ERR_INVALID_TARGET
-  }
-
-  if (room.terminal.cooldown) {
-    return ERR_TIRED
-  }
-
-  const rc1 = tradeEnergy(room)
-  if (rc1 === OK) {
-    return OK
-  }
+  if (buyEnergy(room) === OK) return OK
 
   return ERR_NOT_FOUND
 }
@@ -1585,7 +1590,7 @@ const getOrdersForType = function (resourceType, options) {
   return { [ORDER_SELL]: sellOrders, [ORDER_BUY]: buyOrders, empty: false }
 }
 
-const performIntershardResourcesTrading = function () {
+const performPixelTrading = function () {
   // memo
   // ORDER_SELL: pixels increase, credits decrease; lowest price best
   // ORDER_BUY: pixels decrease, credits increase; highest price best
@@ -1629,10 +1634,24 @@ const performIntershardResourcesTrading = function () {
   const howLowToSell = lowestSellPrice * (1.0 - PIXELS_DISCOUNT)
   if (highestBuyPrice >= howLowToSell) {
     const amount = Math.min(buyOrder.amount, wantToSell)
-    return Game.market.deal(buyOrder.id, amount)
+    const rc = Game.market.deal(buyOrder.id, amount)
+    if (rc === OK) {
+      rememberPrice(PIXEL, buyOrder.price)
+    }
+
+    return rc
   }
 
   return ERR_NOT_IN_RANGE
+}
+
+// does not care for direction
+const rememberPrice = function (what, price) {
+  if (Memory.prices === undefined) {
+    Memory.prices = { }
+  }
+
+  Memory.prices[what] = price
 }
 
 const generatePixel = function () {
