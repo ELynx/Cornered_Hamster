@@ -1428,7 +1428,27 @@ const performShardMarketFuzz = function (room) {
 }
 
 const performIntershardMarketFuzz = function () {
-  
+  if (_.random(CREEP_LIFE_TIME) !== 42) return ERR_TIRED
+
+  const lastSellPrice = getPriceFromMemory(PIXEL)
+  if (!lastSellPrice) return ERR_NOT_FOUND
+
+  // buy pixels for price higher than were sold
+  // try to drive market up a bit
+  const fuzzPixelPrice = lastSellPrice * (1 + PIXELS_DISCOUNT - 0.042)
+
+  for (const order of _.values(Game.market.orders)) {
+    if (order.resourceType === PIXEL) {
+      return Game.market.changeOrderPrice(order.id, fuzzPixelPrice)
+    }
+  }
+
+  return Game.market.createOrder({
+    type: ORDER_BUY,
+    resourceType: PIXEL,
+    price: fuzzPixelPrice,
+    totalAmount: 1
+  })
 }
 
 const performTrading = function () {
@@ -1536,7 +1556,7 @@ const buyEnergy = function (room) {
   const rc = Game.market.deal(theOrder.id, theOrder.actualAmount, room.name)
   console.log(`Deal with rc [${rc}] for [${theOrder.actualAmount}] energy. Order [${theOrder.id}] from [${theOrder.roomName}]. List price [${theOrder.price}], adjusted price [${theOrder.actualPrice}], cost [${theOrder.energyCost} energy]`)
   if (rc === OK) {
-    rememberPrice(RESOURCE_ENERGY, theOrder.price)
+    storePriceToMemory(RESOURCE_ENERGY, theOrder.price)
   }
 
   return rc
@@ -1636,7 +1656,7 @@ const performPixelTrading = function () {
     const amount = Math.min(buyOrder.amount, wantToSell)
     const rc = Game.market.deal(buyOrder.id, amount)
     if (rc === OK) {
-      rememberPrice(PIXEL, buyOrder.price)
+      storePriceToMemory(PIXEL, buyOrder.price)
     }
 
     return rc
@@ -1646,12 +1666,20 @@ const performPixelTrading = function () {
 }
 
 // does not care for direction
-const rememberPrice = function (what, price) {
+const storePriceToMemory = function (what, price) {
   if (Memory.prices === undefined) {
     Memory.prices = { }
   }
 
   Memory.prices[what] = price
+}
+
+const getPriceFromMemory = function (what) {
+  if (Memory.prices === undefined) {
+    return undefined
+  }
+
+  return Memory.prices[what]
 }
 
 const generatePixel = function () {
