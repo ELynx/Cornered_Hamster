@@ -44,6 +44,7 @@ const makeShortcuts = function () {
   Game.valueFlags = _.shuffle(_.values(Game.flags))
   Game.valueCreeps = _.shuffle(_.values(Game.creeps))
   Game.valuePowerCreeps = _.shuffle(_.values(Game.powerCreeps))
+  Game.orderIds = _.keys(Game.market.orders)
 
   for (const room of Game.valueRooms) {
     if (room.controller && room.controller.my) {
@@ -344,9 +345,11 @@ const harvest = function (creep) {
     return ERR_BUSY
   }
 
-  const targets = creep.room.find(FIND_SOURCES_ACTIVE)
+  const targets = creep.room.find(FIND_SOURCES)
 
-  const inRange = _.filter(targets, s => s.pos.isNearTo(creep))
+  const withEnergy = _.filter(targets, s => s.energy > 0)
+
+  const inRange = _.filter(withEnergy, s => s.pos.isNearTo(creep))
   if (inRange.length === 0) {
     return ERR_NOT_FOUND
   }
@@ -1395,7 +1398,9 @@ Structure.prototype.decode = function (code) {
 
 const performTrading = function () {
   for (const room of Game.valueRooms) {
-    performRoomTrading(room)
+    if (room.controller && room.controller.my) {
+      performRoomTrading(room)
+    }
   }
 
   performIntershardResourcesTrading()
@@ -1403,6 +1408,7 @@ const performTrading = function () {
   generatePixel()
 }
 
+// eslint-disable-next-line no-unused-vars
 const RESOURCES_TO_KEEP = [
   RESOURCE_ENERGY, // source may be not enough
   RESOURCE_POWER, // power creep upgrade
@@ -1413,16 +1419,93 @@ const RESOURCES_TO_KEEP = [
   RESOURCE_OPS // because operator may use it as stash
 ]
 
+const ENERGY_PER_EMPTY_SOURCE_PER_TRANSACTION = 100
+const ENERGY_DISCOUNT = 0.15
+
+const tradeEnergy = function (room) {
+  if (room.terminal.store.getUsedCapacity(RESOURCE_ENERGY)) {
+    return ERR_TIRED
+  }
+
+  const sources = room.find(FIND_SOURCES)
+  const withEnergy = _.filter(sources, s => s.energy > 0)
+  if (withEnergy.length > 0) {
+    return ERR_TIRED
+  }
+
+  const orders = getOrdersForType(RESOURCE_ENERGY)
+  if (orders.empty) {
+    return ERR_NOT_FOUND
+  }
+
+  const sellOrders = orders[ORDER_SELL]
+  const buyOrders = orders[ORDER_BUY]
+
+  const lowestSellPrice = sellOrders[0].price
+  const highestBuyPrice = buyOrders[0].price
+
+  const howHighToBuy = highestBuyPrice * (1.0 + ENERGY_DISCOUNT)
+
+  if (lowestSellPrice > howHighToBuy) {
+    return ERR_NOT_IN_RANGE
+  }
+
+  const wantToBuy = Math.max(sources.length, 1) * ENERGY_PER_EMPTY_SOURCE_PER_TRANSACTION
+
+  return ERR_INVALID_TARGET
+}
+
 const performRoomTrading = function (room) {
   if (!room.terminal) {
     return ERR_INVALID_TARGET
   }
 
-  return ERR_BUSY
+  tradeEnergy(room)
+
+  return OK
 }
 
 const PIXELS_TO_KEEP = 500
 const PIXELS_DISCOUNT = 0.15
+
+const __NO_ORDERS__ = { ORDER_SELL: [], ORDER_BUY: [], empty: true }
+
+const getOrdersForType = function (resourceType, options) {
+  if (options && options.limit && options.limit < 1) {
+    return __NO_ORDERS__
+  }
+
+  const allOrders = Game.market.getAllOrders({ resourceType })
+
+  const notMyOrders = _.filter(allOrders, s=> !_.some(Game.orderIds, s.id))
+  if (notMyOrders.length === 0) {
+    return __NO_ORDERS__
+  }
+
+  const grouped = _.groupBy(notMyOrders, 'type')
+  let sellOrders = grouped[ORDER_SELL] || []
+  let buyOrders = grouped[ORDER_BUY] || []
+
+  if (sellOrders.length === 0 || buyOrders.length === 0) {
+    return __NO_ORDERS__
+  }
+
+  sellOrders = _.sortByOrder(sellOrders, ['price'], ['asc'])
+  buyOrders = _.sortByOrder(buyOrders, ['price'], ['desc'])
+
+  if (options && options.limit) {
+    if (options.limit > 1) {
+      sellOrders = _.take(sellOrders, limit)
+      buyOrders = _.take(buyOrders, limit)
+    } else {
+      // shortcut to spare extra array index
+      sellOrders = _.first(sellOrders)
+      buyOrders = _.first(buyOrders)
+    }
+  }
+
+  return { ORDER_SELL: sellOrders, ORDER_BUY: buyOrders, limit, empty: false }
+}
 
 const performIntershardResourcesTrading = function () {
   // memo
@@ -1434,30 +1517,27 @@ const performIntershardResourcesTrading = function () {
     return ERR_NOT_ENOUGH_RESOURCES
   }
 
-  const allSellOrders = Game.market.getAllOrders({ type: ORDER_SELL, resourceType: PIXEL })
-  const allBuyOrders = Game.market.getAllOrders({ type: ORDER_BUY, resourceType: PIXEL })
-
-  if (allSellOrders.length === 0 || allBuyOrders.length === 0) {
-    // cannot make informed market decisions, leave
+  const orders = getOrdersForType(PIXEL, { limit: 1 })
+  if (orders.empty) {
     return ERR_NOT_FOUND
   }
 
-  // as they are presented on "Market" screen
-  const sellOrders = _.sortByOrder(allSellOrders, ['price'], ['asc'])
-  const buyOrders = _.sortByOrder(allBuyOrders, ['price'], ['desc'])
+  // limit 1, skip index
+  const sellOrder = orders[ORDER_SELL]
+  const buyOrder = orders[ORDER_BUY]
 
-  const lowestSalePrice = sellOrders[0].price
-  const highestBuyPrice = buyOrders[0].price
+  const lowestSellPrice = sellOrder.price
+  const highestBuyPrice = buyOrder.price
 
   // if there is a crazy sale price
-  if ((lowestSalePrice < highestBuyPrice) && (lowestSalePrice <= Game.market.credits)) {
-    const canAfford = Math.floor(Game.market.credits / lowestSalePrice)
-    const fromSellOrder = Math.min(sellOrders[0].amount, canAfford)
-    const toBuyOrder = Math.min(buyOrders[0].amount, hasPixels)
+  if ((lowestSellPrice < highestBuyPrice) && (lowestSellPrice <= Game.market.credits)) {
+    const canAfford = Math.floor(Game.market.credits / lowestSellPrice)
+    const fromSellOrder = Math.min(sellOrder.amount, canAfford)
+    const toBuyOrder = Math.min(buyOrder.amount, hasPixels)
     const amount = Math.min(fromSellOrder, toBuyOrder)
 
-    Game.market.deal(sellOrders[0].id, amount)
-    Game.market.deal(buyOrders[0].id, amount)
+    Game.market.deal(sellOrder.id, amount)
+    Game.market.deal(buyOrder.id, amount)
 
     return OK
   }
@@ -1468,10 +1548,10 @@ const performIntershardResourcesTrading = function () {
   }
 
   // there are no crazy and/or affordable prices
-  const howLowToSell = lowestSalePrice * (1.0 - PIXELS_DISCOUNT)
+  const howLowToSell = lowestSellPrice * (1.0 - PIXELS_DISCOUNT)
   if (highestBuyPrice >= howLowToSell) {
-    const amount = Math.min(buyOrders[0].amount, wantToSell)
-    return Game.market.deal(buyOrders[0].id, amount)
+    const amount = Math.min(buyOrder.amount, wantToSell)
+    return Game.market.deal(buyOrder.id, amount)
   }
 
   return ERR_NOT_IN_RANGE
