@@ -1545,7 +1545,7 @@ const performRoomTrading = function (room) {
 const PIXELS_TO_KEEP = 500
 const PIXELS_DISCOUNT = 0.15
 
-const __NO_ORDERS__ = { ORDER_SELL: [], ORDER_BUY: [], empty: true }
+const __NO_ORDERS__ = { [ORDER_SELL]: [], [ORDER_BUY]: [], empty: true }
 
 const getOrdersForType = function (resourceType, options) {
   if (options && options.limit && options.limit < 1) {
@@ -1581,7 +1581,7 @@ const getOrdersForType = function (resourceType, options) {
     }
   }
 
-  return { ORDER_SELL: sellOrders, ORDER_BUY: buyOrders, empty: false }
+  return { [ORDER_SELL]: sellOrders, [ORDER_BUY]: buyOrders, empty: false }
 }
 
 const performIntershardResourcesTrading = function () {
