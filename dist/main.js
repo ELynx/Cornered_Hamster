@@ -1403,6 +1403,16 @@ const performTrading = function () {
   generatePixel()
 }
 
+const RESOURCES_TO_KEEP = [
+  RESOURCE_ENERGY, // source may be not enough
+  RESOURCE_POWER, // power creep upgrade
+  RESOURCE_GHODIUM, // nuker
+  RESOURCE_CATALYZED_GHODIUM_ACID, // conroller upgrade, in order of prio
+  RESOURCE_GHODIUM_ACID, 
+  RESOURCE_GHODIUM_HYDRIDE,
+  RESOURCE_OPS // because operator may use it as stash
+]
+
 const performRoomTrading = function (room) {
   if (!room.terminal) {
     return ERR_INVALID_TARGET
