@@ -1424,6 +1424,14 @@ Structure.prototype.decode = function (code) {
 }
 
 const performShardMarketFuzz = function (room) {
+  if (_.random(20) === 20) {
+    for (const order of _.values(Game.market.orders)) {
+      if (room.name === order.roomName) {
+        return Game.market.deal(order.id, _.random(1, order.amount), room.name)
+      }
+    }
+  }
+
   if (_.random(420) !== 42) return ERR_TIRED
 
   const lastPrice = getPriceFromMemory(RESOURCE_ENERGY)
@@ -1431,7 +1439,7 @@ const performShardMarketFuzz = function (room) {
 
   // sell energy for price lower that were bought
   // try to drive market down a bit
-  const fuzzPrice = lastPrice * (1.0 - ENERGY_DISCOUNT + 0.042)
+  const fuzzPrice = (_.random(3) === 1) ? (_.random(420) / 1000) : (lastPrice * (1.0 - ENERGY_DISCOUNT - 0.042))
 
   for (const order of _.values(Game.market.orders)) {
     if (order.resourceType === RESOURCE_ENERGY) {
@@ -1450,6 +1458,14 @@ const performShardMarketFuzz = function (room) {
 }
 
 const performIntershardMarketFuzz = function () {
+  if (_.random(20) === 20) {
+    for (const order of _.values(Game.market.orders)) {
+      if (order.resourceType === PIXEL) {
+        return Game.market.deal(order.id, 1)
+      }
+    }
+  }
+
   if (_.random(CREEP_LIFE_TIME) !== 42) return ERR_TIRED
 
   const lastPrice = getPriceFromMemory(PIXEL)
@@ -1457,7 +1473,7 @@ const performIntershardMarketFuzz = function () {
 
   // buy pixels for price higher than were sold
   // try to drive market up a bit
-  const fuzzPrice = lastPrice * (1.0 + PIXELS_DISCOUNT - 0.042)
+  const fuzzPrice = lastPrice * (1.0 + PIXELS_DISCOUNT + 0.042)
 
   for (const order of _.values(Game.market.orders)) {
     if (order.resourceType === PIXEL) {
