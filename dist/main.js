@@ -50,7 +50,8 @@ const makeShortcuts = function () {
   Game.valueFlags = _.shuffle(_.values(Game.flags))
   Game.valueCreeps = _.shuffle(_.values(Game.creeps))
   Game.valuePowerCreeps = _.shuffle(_.values(Game.powerCreeps))
-  Game.orderIds = _.keys(Game.market.orders)
+  Game.keyOrders = _.keys(Game.market.orders)
+  Game.valueOrders = _.values(Game.market.orders)
 
   for (const room of Game.valueRooms) {
     if (room.controller && room.controller.my) {
@@ -1425,7 +1426,7 @@ Structure.prototype.decode = function (code) {
 
 const performShardMarketFuzz = function (room) {
   if (_.random(20) === 20) {
-    for (const order of _.values(Game.market.orders)) {
+    for (const order of Game.valueOrders) {
       if (room.name === order.roomName) {
         return Game.market.deal(order.id, _.random(1, order.amount), room.name)
       }
@@ -1441,7 +1442,7 @@ const performShardMarketFuzz = function (room) {
   // try to drive market down a bit
   const fuzzPrice = (_.random(3) === 1) ? (_.random(420) / 1000) : (lastPrice * (1.0 - ENERGY_DISCOUNT - 0.042))
 
-  for (const order of _.values(Game.market.orders)) {
+  for (const order of Game.valueOrders) {
     if (order.resourceType === RESOURCE_ENERGY) {
       return Game.market.changeOrderPrice(order.id, fuzzPrice)
     }
@@ -1459,7 +1460,7 @@ const performShardMarketFuzz = function (room) {
 
 const performIntershardMarketFuzz = function () {
   if (_.random(20) === 20) {
-    for (const order of _.values(Game.market.orders)) {
+    for (const order of Game.valueOrders) {
       if (order.resourceType === PIXEL) {
         return Game.market.deal(order.id, 1)
       }
@@ -1475,7 +1476,7 @@ const performIntershardMarketFuzz = function () {
   // try to drive market up a bit
   const fuzzPrice = lastPrice * (1.0 + PIXELS_DISCOUNT + 0.042)
 
-  for (const order of _.values(Game.market.orders)) {
+  for (const order of Game.valueOrders) {
     if (order.resourceType === PIXEL) {
       return Game.market.changeOrderPrice(order.id, fuzzPrice)
     }
@@ -1502,7 +1503,17 @@ const performTrading = function () {
   performPixelTrading()
   performIntershardMarketFuzz()
 
+  cancelCompletedOrders()
+
   generatePixel()
+}
+
+const cancelCompletedOrders = function () {
+  for (const order of Game.valueOrders) {
+    if (order.remainingAmount === 0) {
+      Game.market.cancelOrder(order.id)
+    }
+  }
 }
 
 // eslint-disable-next-line no-unused-vars
@@ -1618,7 +1629,7 @@ const getOrdersForType = function (resourceType, options) {
 
   const allOrders = Game.market.getAllOrders({ resourceType })
 
-  const notMyOrders = _.filter(allOrders, s => !_.some(Game.orderIds, s.id))
+  const notMyOrders = _.filter(allOrders, s => !_.some(Game.keyOrders, _.matches(s.id)))
   if (notMyOrders.length === 0) {
     return __NO_ORDERS__
   }
