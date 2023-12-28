@@ -1424,29 +1424,51 @@ Structure.prototype.decode = function (code) {
 }
 
 const performShardMarketFuzz = function (room) {
+  if (_.random(420) !== 42) return ERR_TIRED
 
+  const lastPrice = getPriceFromMemory(RESOURCE_ENERGY)
+  if (!lastPrice) return ERR_NOT_FOUND
+
+  // sell energy for price lower that were bought
+  // try to drive market down a bit
+  const fuzzPrice = lastPrice * (1.0 - ENERGY_DISCOUNT + 0.042)
+
+  for (const order of _.values(Game.market.orders)) {
+    if (order.resourceType === RESOURCE_ENERGY) {
+      return Game.market.changeOrderPrice(order.id, fuzzPrice)
+    }
+  }
+
+  // kevin.jpg
+  return Game.market.createOrder({
+    type: ORDER_SELL,
+    resourceType: RESOURCE_ENERGY,
+    price: fuzzPrice,
+    totalAmount: _.random(42, 69),
+    roomName: room.name
+  })
 }
 
 const performIntershardMarketFuzz = function () {
   if (_.random(CREEP_LIFE_TIME) !== 42) return ERR_TIRED
 
-  const lastSellPrice = getPriceFromMemory(PIXEL)
-  if (!lastSellPrice) return ERR_NOT_FOUND
+  const lastPrice = getPriceFromMemory(PIXEL)
+  if (!lastPrice) return ERR_NOT_FOUND
 
   // buy pixels for price higher than were sold
   // try to drive market up a bit
-  const fuzzPixelPrice = lastSellPrice * (1 + PIXELS_DISCOUNT - 0.042)
+  const fuzzPrice = lastPrice * (1.0 + PIXELS_DISCOUNT - 0.042)
 
   for (const order of _.values(Game.market.orders)) {
     if (order.resourceType === PIXEL) {
-      return Game.market.changeOrderPrice(order.id, fuzzPixelPrice)
+      return Game.market.changeOrderPrice(order.id, fuzzPrice)
     }
   }
 
   return Game.market.createOrder({
     type: ORDER_BUY,
     resourceType: PIXEL,
-    price: fuzzPixelPrice,
+    price: fuzzPrice,
     totalAmount: 1
   })
 }
