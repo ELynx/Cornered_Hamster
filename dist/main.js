@@ -1419,18 +1419,15 @@ const RESOURCES_TO_KEEP = [
   RESOURCE_OPS // because operator may use it as stash
 ]
 
-const ENERGY_PER_EMPTY_SOURCE_PER_TRANSACTION = 100
 const ENERGY_DISCOUNT = 0.15
+const ENERGY_PER_EMPTY_SOURCE_PER_TRANSACTION = 100
+const ENERGY_EXTRA_COST_TOLERANCE = 0.1
 
 const tradeEnergy = function (room) {
-  if (room.terminal.store.getUsedCapacity(RESOURCE_ENERGY)) {
-    return ERR_TIRED
-  }
-
   const sources = room.find(FIND_SOURCES)
   const withEnergy = _.filter(sources, s => s.energy > 0)
   if (withEnergy.length > 0) {
-    return ERR_TIRED
+    return ERR_BUSY
   }
 
   const orders = getOrdersForType(RESOURCE_ENERGY)
@@ -1439,20 +1436,61 @@ const tradeEnergy = function (room) {
   }
 
   const sellOrders = orders[ORDER_SELL]
-  const buyOrders = orders[ORDER_BUY]
 
   const lowestSellPrice = sellOrders[0].price
-  const highestBuyPrice = buyOrders[0].price
+  const highestBuyPrice = orders[ORDER_BUY][0].price
 
   const howHighToBuy = highestBuyPrice * (1.0 + ENERGY_DISCOUNT)
 
+  // no good deals at all, leave
   if (lowestSellPrice > howHighToBuy) {
     return ERR_NOT_IN_RANGE
   }
 
+  if (lowestSellPrice > Game.market.credits) {
+    return ERR_NOT_ENOUGH_RESOURCES
+  }
+
+  const hasEnergy = room.terminal.store.getUsedCapacity(RESOURCE_ENERGY) - (room.terminal.__withdraw_qty__ || 0)
   const wantToBuy = Math.max(sources.length, 1) * ENERGY_PER_EMPTY_SOURCE_PER_TRANSACTION
 
-  return ERR_INVALID_TARGET
+  const viableSellOrders = new Array(sellOrders.length)
+  for (const sellOrder of sellOrders) {
+    const cost1000 = Game.market.calcTransactionCost(1000, sellOrder.roomName, room.name)
+    const canDeal = Math.floor(1000 * hasEnergy / cost1000)
+    if (canDeal < 1) {
+      continue
+    }
+
+    const canAfford = Math.floor(Game.market.credits / sellOrder.price)
+    if (canAfford < 1) {
+      continue
+    }
+
+    sellOrder.actualAmount = Math.min(canDeal, canAfford, sellOrder.amount, wantToBuy)
+    sellOrder.energyCost = Game.market.calcTransactionCost(sellOrder.actualAmount, sellOrder.roomName, room.name)
+    if (sellOrder.actualAmount <= sellOrder.energyCost) {
+      continue
+    }
+
+    sellOrder.actualPrice = sellOrder.price * sellOrder.actualAmount / (sellOrder.actualAmount - sellOrder.energyCost)
+    if (sellOrder.actualPrice / sellOrder.price > 1.0 + ENERGY_EXTRA_COST_TOLERANCE) {
+      continue
+    }
+
+    viableSellOrders.push(sellOrder)
+  }
+
+  if (viableSellOrders.length === 0) {
+    return ERR_NOT_IN_RANGE
+  }
+
+  const sortedViableSellOrders = _.sortByOrder(viableSellOrders, ['actualPrice', 'actualAmount', 'energyCost'], ['asc', 'desc', 'asc'])
+  const theOrder = _.first(sortedViableSellOrders)
+
+  const rc = Game.market.deal(theOrder.id, theOrder.actualAmount, room.name)
+  console.log(`Deal with rc [${rc}] for [${theOrder.actualAmount}] energy. Order [${theOrder.id}] from [${theOrder.roomName}]. List price [${theOrder.price}], adjusted price [${theOrder.actualPrice}], cost [${theOrder.energyCost} energy]`)
+  return rc
 }
 
 const performRoomTrading = function (room) {
@@ -1460,9 +1498,16 @@ const performRoomTrading = function (room) {
     return ERR_INVALID_TARGET
   }
 
-  tradeEnergy(room)
+  if (room.terminal.cooldown) {
+    return ERR_TIRED
+  }
 
-  return OK
+  const rc1 = tradeEnergy(room)
+  if (rc1 === OK) {
+    return OK
+  }
+
+  return ERR_NOT_FOUND
 }
 
 const PIXELS_TO_KEEP = 500
