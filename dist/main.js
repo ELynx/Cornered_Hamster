@@ -27,6 +27,12 @@ if (Game.rooms.sim) {
   ROOM_PLANS.sim = ROOM_PLANS.E56N59
 }
 
+// because doing/importing intent system just for terminal is too much
+// actively fill terminal with energy up to this level
+const TERMINAL_ENERGY_RESERVE_LOW = Math.floor(TERMINAL_CAPACITY * 0.05)
+// actively draw energy from terminal from this level
+const TERMINAL_ENERGY_RESERVE_HIGH = TERMINAL_ENERGY_RESERVE_LOW + 150
+
 module.exports.loop = function () {
   makeShortcuts()
 
@@ -535,7 +541,7 @@ const grab = function (creep, what) {
 
     if (!from.pos.isNearTo(creep)) continue
 
-    if ((didWithdraw === false) && (target.type === LOOK_TOMBSTONES || target.type === LOOK_RUINS)) {
+    if ((didWithdraw === false) && (target.type === LOOK_TOMBSTONES || target.type === LOOK_RUINS || target.type === LOOK_STRUCTURES)) {
       const rc = creep.withdraw(from, what)
       if (rc === OK) {
         didWithdraw = true
@@ -617,13 +623,18 @@ const getGrabTargets = function (room, what) {
     if (!room.__no_spawn__) {
       if (structure.structureType !== STRUCTURE_CONTAINER &&
           structure.structureType !== STRUCTURE_TERMINAL) continue
+
+      if (what === RESOURCE_ENERGY && structure.structureType === STRUCTURE_TERMINAL) {
+        const now = structure.store.getUsedCapacity(what)
+        if (now <= TERMINAL_ENERGY_RESERVE_HIGH) continue
+      }
     }
 
     if (structure.store && structure.store.getUsedCapacity(what) > 0) {
       targets.push(
         {
-          type: LOOK_RUINS, // compatible :)
-          [LOOK_RUINS]: structure
+          type: LOOK_STRUCTURES,
+          [LOOK_STRUCTURES]: structure
         }
       )
     }
@@ -643,7 +654,23 @@ const getRestockTargets = function (room, what) {
 
   const structures = room.find(FIND_STRUCTURES)
 
-  const destinationStructures = _.filter(structures, s => s.structureType !== STRUCTURE_CONTAINER && s.structureType !== STRUCTURE_TERMINAL)
+  const destinationStructures = _.filter(
+    structures,
+    s => {
+      if (s.structureType === STRUCTURE_CONTAINER) {
+        return false
+      }
+
+      if (what === RESOURCE_ENERGY && s.structureType === STRUCTURE_TERMINAL) {
+        const now = s.store.getUsedCapacity(what)
+        if (now >= TERMINAL_ENERGY_RESERVE_LOW) {
+          return false
+        }
+      }
+
+      return true
+    }
+  )
 
   const withDemand = _.filter(destinationStructures, s => (s.store && s.store.getFreeCapacity(what) > 0))
 
@@ -1420,10 +1447,15 @@ const RESOURCES_TO_KEEP = [
 ]
 
 const ENERGY_DISCOUNT = 0.15
-const ENERGY_PER_EMPTY_SOURCE_PER_TRANSACTION = 100
+const ENERGY_PER_EMPTY_SOURCE_PER_TRANSACTION = 450
 const ENERGY_EXTRA_COST_TOLERANCE = 0.1
 
 const tradeEnergy = function (room) {
+  // precaution, do not overbuy energy
+  if (room.terminal.store.getUsedCapacity(RESOURCE_ENERGY) >= 2 * TERMINAL_ENERGY_RESERVE_LOW) {
+    return ERR_BUSY
+  }
+
   const sources = room.find(FIND_SOURCES)
   const withEnergy = _.filter(sources, s => s.energy > 0)
   if (withEnergy.length > 0) {
@@ -1451,7 +1483,7 @@ const tradeEnergy = function (room) {
     return ERR_NOT_ENOUGH_RESOURCES
   }
 
-  const hasEnergy = room.terminal.store.getUsedCapacity(RESOURCE_ENERGY) - (room.terminal.__withdraw_qty__ || 0)
+  const hasEnergy = room.terminal.store.getUsedCapacity(RESOURCE_ENERGY)
   const wantToBuy = Math.max(sources.length, 1) * ENERGY_PER_EMPTY_SOURCE_PER_TRANSACTION
 
   const viableSellOrders = new Array(sellOrders.length)
