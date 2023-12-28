@@ -1451,8 +1451,10 @@ const ENERGY_PER_EMPTY_SOURCE_PER_TRANSACTION = 450
 const ENERGY_EXTRA_COST_TOLERANCE = 0.334
 
 const tradeEnergy = function (room) {
+  const hasEnergy = room.terminal.store.getUsedCapacity(RESOURCE_ENERGY)
+
   // precaution, do not overbuy energy
-  if (room.terminal.store.getUsedCapacity(RESOURCE_ENERGY) >= 2 * TERMINAL_ENERGY_RESERVE_LOW) {
+  if (hasEnergy >= 2 * TERMINAL_ENERGY_RESERVE_LOW) {
     return ERR_BUSY
   }
 
@@ -1483,7 +1485,6 @@ const tradeEnergy = function (room) {
     return ERR_NOT_ENOUGH_RESOURCES
   }
 
-  const hasEnergy = room.terminal.store.getUsedCapacity(RESOURCE_ENERGY)
   const wantToBuy = Math.max(sources.length, 1) * ENERGY_PER_EMPTY_SOURCE_PER_TRANSACTION
 
   const viableSellOrders = []
