@@ -1441,7 +1441,7 @@ const RESOURCES_TO_KEEP = [
   RESOURCE_POWER, // power creep upgrade
   RESOURCE_GHODIUM, // nuker
   RESOURCE_CATALYZED_GHODIUM_ACID, // conroller upgrade, in order of prio
-  RESOURCE_GHODIUM_ACID, 
+  RESOURCE_GHODIUM_ACID,
   RESOURCE_GHODIUM_HYDRIDE,
   RESOURCE_OPS // because operator may use it as stash
 ]
@@ -1554,7 +1554,7 @@ const getOrdersForType = function (resourceType, options) {
 
   const allOrders = Game.market.getAllOrders({ resourceType })
 
-  const notMyOrders = _.filter(allOrders, s=> !_.some(Game.orderIds, s.id))
+  const notMyOrders = _.filter(allOrders, s => !_.some(Game.orderIds, s.id))
   if (notMyOrders.length === 0) {
     return __NO_ORDERS__
   }
