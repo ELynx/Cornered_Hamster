@@ -1572,8 +1572,8 @@ const getOrdersForType = function (resourceType, options) {
 
   if (options && options.limit) {
     if (options.limit > 1) {
-      sellOrders = _.take(sellOrders, limit)
-      buyOrders = _.take(buyOrders, limit)
+      sellOrders = _.take(sellOrders, options.limit)
+      buyOrders = _.take(buyOrders, options.limit)
     } else {
       // shortcut to spare extra array index
       sellOrders = _.first(sellOrders)
@@ -1581,7 +1581,7 @@ const getOrdersForType = function (resourceType, options) {
     }
   }
 
-  return { ORDER_SELL: sellOrders, ORDER_BUY: buyOrders, limit, empty: false }
+  return { ORDER_SELL: sellOrders, ORDER_BUY: buyOrders, empty: false }
 }
 
 const performIntershardResourcesTrading = function () {
