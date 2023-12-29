@@ -1,5 +1,7 @@
 console.log('Code loaded')
 
+const IS_SIM = Game.rooms.sim !== undefined
+
 const CONTROLLER_SIGN_TEXT = 'https://github.com/ELynx/Cornered_Hamster'
 let forcedControllerSign = true // once in code load force the sign, it is visible on new world map
 
@@ -23,7 +25,7 @@ const ROOM_PLANS = {
 }
 
 // fallback for simulation
-if (Game.rooms.sim) {
+if (IS_SIM) {
   ROOM_PLANS.sim = ROOM_PLANS.E56N59
 }
 
@@ -126,7 +128,7 @@ const work = function (creep) {
   dismantle(creep)
   shareEnergy(creep)
   cancelConstructionSites(creep)
-  handleInvasion(creep)
+  handleInvasion(creep) // TODO called only if __work__
   moveAround(creep)
 
   return OK
@@ -715,11 +717,27 @@ const getRepairTargets = function (room) {
 
   const canBeRepaired = _.filter(structures, s => (CONSTRUCTION_COST[s.structureType] && s.hits && s.hitsMax && s.hits < s.hitsMax && s.hits < hitsThreshold))
 
-  // to speed up balance tests on sim, cap ramparts at 45k
-  // on production limit to 3M; since there is no defence any way, just stop at this mark
-  const rampartThreshold = Game.rooms.sim ? 45000 : 3000000
+  // based on 5 big boosted (+100%) invaders
+  // melee  =  3 ranged x 10 x 2 + 4 work x 50 x 2 + 2 attack x 30 x 2 =  60 ranged + 520 melee = 580 focused
+  // ranged = 18 ranged x 10 x 2 + 1 work x 50 x 2 + 0 attack x 30 x 2 = 360 ranged + 100 melee = 460 focused
+  // for outer line, 3 melee + 2 ranged attacking single spot = 2660 focused
+  // for inner line, 5 ranged attacking single spot = 1800 ranged
+  // 300 decay per 100 ticks add another 4500 hits lost
+  // given lifetime of 1500, total damage under worst luck
+  // outer line 3990000 + 4500 = 3994500
+  // inner line 2700000 + 4500 = 2704500
+  const rampartThresholdOuter = IS_SIM ? 40000 : 3994500
+  const rampartThresholdInner = IS_SIM ? 27100 : 2704500
 
-  const shouldBeRepaired = _.filter(canBeRepaired, s => (s.structureType !== STRUCTURE_RAMPART || s.hits < rampartThreshold))
+  const shouldBeRepaired = _.filter(
+    canBeRepaired, s => {
+      if (s.structureType !== STRUCTURE_RAMPART) return true
+
+      // this is not scientifically accurate, but works for now
+      const outerLayer = s.pos.y <= 2 || s.pos.y >= 48 || s.pos.x <= 2 || s.pos.x >= 48
+      return s.hits < (outerLayer ? rampartThresholdOuter : rampartThresholdInner)
+    }
+  )
 
   const mineOrNeutral = _.filter(shouldBeRepaired, s => (s.my || true))
 
@@ -1099,7 +1117,7 @@ StructureController.prototype.canActivateSafeMode = function () {
 
 const performAutobuild = function () {
   const force = Memory.forceAutobuild === true
-  const timer = Game.time % (Game.rooms.sim ? 10 : CREEP_LIFE_TIME) === 0
+  const timer = Game.time % (IS_SIM ? 15 : CREEP_LIFE_TIME) === 0
 
   Memory.forceAutobuild = undefined
 
@@ -1732,7 +1750,7 @@ const getPriceFromMemory = function (what) {
 }
 
 const generatePixel = function () {
-  if (Game.rooms.sim === undefined) {
+  if (!IS_SIM) {
     return Game.cpu.generatePixel()
   }
 
