@@ -128,7 +128,7 @@ const work = function (creep) {
   dismantle(creep)
   shareEnergy(creep)
   cancelConstructionSites(creep)
-  handleInvasion(creep) // TODO called only if __work__
+  handleInvasion(creep) // TODO only when __work__
   moveAround(creep)
 
   return OK
@@ -1105,6 +1105,10 @@ const handleRoomState = function (room) {
 
   if (room.__no_spawn__) room.__emergency__ = true
   if (room.__invasion__) room.__emergency__ = true
+
+  // TODO make safe modes
+  // for that, spawn capacity only creep + boost, because need 1000 G
+  // keep this in mind when planning how much G to buy
 }
 
 StructureController.prototype.canActivateSafeMode = function () {
