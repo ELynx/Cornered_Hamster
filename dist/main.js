@@ -1710,10 +1710,14 @@ const performPixelTrading = function () {
     const toBuyOrder = Math.min(buyOrder.amount, hasPixels)
     const amount = Math.min(fromSellOrder, toBuyOrder)
 
-    Game.market.deal(sellOrder.id, amount)
-    Game.market.deal(buyOrder.id, amount)
+    // make sure crazy deal goes through...
+    const rc = Game.market.deal(sellOrder.id, amount)
+    if (rc !== OK) {
+      return rc
+    }
 
-    return OK
+    // offset it, if possible
+    return Game.market.deal(buyOrder.id, amount)
   }
 
   const wantToSell = hasPixels - PIXELS_TO_KEEP
