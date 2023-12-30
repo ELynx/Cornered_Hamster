@@ -23,3 +23,17 @@ I just really wanted to solve a puzzle for that room. Intent is not to use any o
 Also, since this is hardly a secret, I decided to make it public.
 
 Suggestions, issues, PRs are welcome.
+
+## Things to do for release v1.0.0
+
+- [ ] Define path to power activation
+- [ ] Define conditions and build plans for levels past 7
+- [ ] Collect intelligence with observer
+- [ ] Auto-retaliation with nuker
+- [ ] Ops grind by operator
+
+## Things to do past release v.1.0.0
+
+- [ ] Creep.generateSafeMode
+- [ ] Terminal clean up
+- [ ] Containers clean up
