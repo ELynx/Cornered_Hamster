@@ -32,7 +32,7 @@ Suggestions, issues, PRs are welcome.
 - [ ] Auto-retaliation with nuker
 - [ ] Ops grind by operator
 
-## Things to do past release v.1.0.0
+## Things to do past release v1.0.0
 
 - [ ] Creep.generateSafeMode
 - [ ] Terminal clean up
