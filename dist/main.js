@@ -1447,7 +1447,8 @@ Structure.prototype.decode = function (code) {
 }
 
 const performShardMarketFuzz = function (room) {
-  if (_.random(20) === 20) {
+  // kevin.jpg
+  if (_.random(69) === 69) {
     for (const order of Game.valueOrders) {
       if (room.name === order.roomName) {
         return Game.market.deal(order.id, _.random(1, order.amount), room.name)
@@ -1455,14 +1456,14 @@ const performShardMarketFuzz = function (room) {
     }
   }
 
-  if (_.random(420) !== 42) return ERR_TIRED
+  if (_.random(690) !== 690) return ERR_TIRED
 
   const lastPrice = getPriceFromMemory(RESOURCE_ENERGY)
   if (!lastPrice) return ERR_NOT_FOUND
 
   // sell energy for price lower that were bought
   // try to drive market down a bit
-  const fuzzPrice = (_.random(3) === 1) ? (_.random(420) / 1000) : (lastPrice * (1.0 - ENERGY_DISCOUNT - 0.042))
+  const fuzzPrice = (_.random(9) === 6) ? (_.random(690) / 690) : (lastPrice * (1.0 - ENERGY_DISCOUNT + 0.069))
 
   for (const order of Game.valueOrders) {
     if (order.resourceType === RESOURCE_ENERGY) {
@@ -1470,18 +1471,17 @@ const performShardMarketFuzz = function (room) {
     }
   }
 
-  // kevin.jpg
   return Game.market.createOrder({
     type: ORDER_SELL,
     resourceType: RESOURCE_ENERGY,
     price: fuzzPrice,
-    totalAmount: _.random(42, 69),
+    totalAmount: _.random(69),
     roomName: room.name
   })
 }
 
 const performIntershardMarketFuzz = function () {
-  if (_.random(20) === 20) {
+  if (_.random(42) === 42) {
     for (const order of Game.valueOrders) {
       if (order.resourceType === PIXEL) {
         return Game.market.deal(order.id, 1)
@@ -1489,14 +1489,14 @@ const performIntershardMarketFuzz = function () {
     }
   }
 
-  if (_.random(CREEP_LIFE_TIME) !== 42) return ERR_TIRED
+  if (_.random(4200) !== 42) return ERR_TIRED
 
   const lastPrice = getPriceFromMemory(PIXEL)
   if (!lastPrice) return ERR_NOT_FOUND
 
   // buy pixels for price higher than were sold
   // try to drive market up a bit
-  const fuzzPrice = lastPrice * (1.0 + PIXELS_DISCOUNT + 0.042)
+  const fuzzPrice = lastPrice * (1.0 + PIXELS_DISCOUNT - 0.042)
 
   for (const order of Game.valueOrders) {
     if (order.resourceType === PIXEL) {
