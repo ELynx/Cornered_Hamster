@@ -566,7 +566,7 @@ const getBoosted = function (creep) {
 
   const target = creep.room.lab
   if (!target) {
-    return  ERR_NOT_FOUND
+    return ERR_NOT_FOUND
   }
 
   if (target.pos.isNearTo(creep)) {
