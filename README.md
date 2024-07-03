@@ -27,7 +27,7 @@ Suggestions, issues, PRs are welcome.
 ## Things to do for release v1.0.0
 
 - [ ] Define path to power activation
-- [ ] Define conditions and build plans for levels past 7
+- [ ] Define conditions and build plans for levels past 8
 - [ ] Collect intelligence with observer
 - [ ] Auto-retaliation with nuker
 - [ ] Ops grind by operator
