@@ -22,11 +22,7 @@ const ROOM_PLANS = {
     5: 'ࢃःऄ룃⡂⢂⣂⤂⥃⥄ᢃᤃᤄ飃', // -//-
     6: 'ࢃःऄ룃⡂⢂⣂⤂⥃⥄ᢃᤃᤄ飃', // -//-
     7: 'ࢃःऄ룃뤂⡂⢂⥃⥄ᢃᤃᤄ飃餂飂', // mutate extension into spawn + spawn rampart, mutate extension into terminal + terminal rampart
-    // TODO do not create lab until power is activated
-    // TODO rethink and reorder 8+
-    // TODO position workers
-    8: '뤂뢂뢃硂顂颂飂餂颃飃餃楃饃ꢄ䤄餄襄饄', // end build with 1 wall road
-    9: '뤂뢂뢃硂顂颂飂餂颃飃餃楃饃ꢄ䤄餄襄饄ꢅ' // end build with 2 wall roads
+    8: 'ࢃःऄ룃뤂⡂⢂⥃⥄ᢃᤃᤄ飃餂飂', // mutate extension into spawn + spawn rampart
   }
 }
 
@@ -38,7 +34,6 @@ const makeShortcuts = function () {
   Game.valueRooms = _.shuffle(_.values(Game.rooms))
   Game.valueFlags = _.shuffle(_.values(Game.flags))
   Game.valueCreeps = _.shuffle(_.values(Game.creeps))
-  Game.valuePowerCreeps = _.shuffle(_.values(Game.powerCreeps))
   Game.keyOrders = _.keys(Game.market.orders)
   Game.valueOrders = _.values(Game.market.orders)
 
@@ -49,18 +44,6 @@ const makeShortcuts = function () {
 
       for (const structure of structures) {
         switch (structure.structureType) {
-          case STRUCTURE_LAB:
-            room.lab = structure
-            break
-          case STRUCTURE_NUKER:
-            room.nuker = structure
-            break
-          case STRUCTURE_OBSERVER:
-            room.observer = structure
-            break
-          case STRUCTURE_POWER_SPAWN:
-            room.powerSpawn = structure
-            break
           case STRUCTURE_SPAWN:
             room.valueSpawns.push(structure)
             break
@@ -207,15 +190,6 @@ const handleRoomState = function (room) {
 
   room.__level__ = room.controller.level
 
-  if (room.__level__ === 8 && room.controller.isPowerEnabled) {
-    room.__level__ = 9
-  }
-
-  // TODO release level 8 after invent how to manage
-  if (room.__level__ > 7) {
-    room.__level__ = 7
-  }
-
   const maxLevel = room.memory.maxLevel || 0
   if (maxLevel < room.__level__) {
     room.memory.maxLevel = room.__level__
@@ -224,8 +198,11 @@ const handleRoomState = function (room) {
   // detect and handle no spawn state
   room.__no_spawn__ = room.valueSpawns.length === 0
 
-  // TODO detect power creeps
-  const hostiles = _.filter(room.find(FIND_CREEPS), s => !s.my)
+  const hostileCreeps = _.filter(room.find(FIND_CREEPS), s => !s.my)
+  const hostilePowerCreeps = _.filter(room.find(FIND_POWER_CREEPS), s => !s.my)
+
+  const hostiles = hostileCreeps.concat(hostilePowerCreeps)
+
   if (hostiles.length > 0) {
     room.__invasion__ = true
 
@@ -385,39 +362,57 @@ const roomEnergyAndEnergyCapacity = function (room) {
   return [energy, Math.max(capacity, SPAWN_ENERGY_CAPACITY)]
 }
 
-const makeBody = function (room, x, y) {
+const _getBody = function (work, carry = 1) {
+  const works = new Array(work)
+  works.fill(WORK)
+
+  const carries = new Array(carry)
+  carries.fill(CARRY)
+
+  return works.concat(carries)
+}
+
+const _getCost = function (body) {
+  let cost = 0
+  for (const part of body) {
+    cost += BODYPART_COST[part] || 0
+  }
+  return cost
+}
+
+const Work2Carry1Body = _getBody(2) // backup for 300 spawn trickle charge
+const Work2Carry1Cost = _getCost(Work2Carry1Body)
+
+const Work3Carry1Body = _getBody(3)
+const Work3Carry1Cost = _getCost(Work3Carry1Body)
+
+const Work4Carry1Body = _getBody(4)
+const Work4Carry1Cost = _getCost(Work4Carry1Body)
+
+const Work5Carry1Body = _getBody(5)
+const Work5Carry1Cost = _getCost(Work5Carry1Body)
+
+const makeBody = function (room) {
   // eslint-disable-next-line no-unused-vars
   const [energy, capacity] = roomEnergyAndEnergyCapacity(room)
   if (capacity <= 0) return [[], 0]
 
-  let body = [WORK, WORK, CARRY] // backup for 300 spawn trickle charge
-  let cost = 250
+  let body = Work2Carry1Body
+  let cost = Work2Carry1Cost
 
-  if (capacity >= 350) {
-    body = [WORK, WORK, WORK, CARRY]
-    cost = 350
+  if (capacity >= Work3Carry1Cost) {
+    body = Work3Carry1Body
+    cost = Work3Carry1Cost
   }
 
-  if (capacity >= 450) {
-    body = [WORK, WORK, WORK, WORK, CARRY]
-    cost = 450
+  if (capacity >= Work4Carry1Cost) {
+    body = Work4Carry1Body
+    cost = Work4Carry1Cost
   }
 
-  if (capacity >= 550) {
-    body = [WORK, WORK, WORK, WORK, WORK, CARRY]
-    cost = 550
-  }
-
-  // TODO lock behind some gate, because around level 7 this is possible
-  // if (capacity >= 900) {
-  //  body = [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE]
-  //  cost = 900
-  // }
-
-  // penalty for walling
-  if (room.getTerrain().get(x, y) === TERRAIN_MASK_WALL) {
-    body = _.rest(body)
-    cost -= 100
+  if (capacity >= Work5Carry1Cost) {
+    body = Work5Carry1Body
+    cost = Work5Carry1Cost
   }
 
   return [body, cost]
@@ -451,7 +446,7 @@ const spawnCreepImpl = function (name1, name2, room, x, y) {
   const creep = creep1 || creep2
 
   // see if body is possible
-  const [body, cost] = makeBody(room, x, y)
+  const [body, cost] = makeBody(room)
   if (body.length === 0) {
     return ERR_NOT_ENOUGH_RESOURCES
   }
@@ -557,24 +552,6 @@ const signController = function (creep) {
   }
 
   return rc
-}
-
-const getBoosted = function (creep) {
-  if (creep.room.__no_spawn__) {
-    return ERR_NOT_ENOUGH_RESOURCES
-  }
-
-  const target = creep.room.lab
-  if (!target) {
-    return ERR_NOT_FOUND
-  }
-
-  if (target.pos.isNearTo(creep)) {
-    // keep doing it
-    return target.boostCreep(creep)
-  }
-
-  return ERR_NOT_IN_RANGE
 }
 
 const getGrabTargets = function (room, what) {
@@ -1029,6 +1006,10 @@ const handleInvasion = function (creep) {
     return ERR_BUSY
   }
 
+  if (creep.body.length !== creep.__work__) {
+    return ERR_INVALID_TARGET
+  }
+
   if (creep.room.__invasion_npc__ && (creep.room.__can_fight__ !== true)) {
     const structures = creep.room.find(FIND_STRUCTURES)
 
@@ -1058,21 +1039,8 @@ const handleInvasion = function (creep) {
   return ERR_BUSY
 }
 
-const moveAround = function (creep) {
-  if (!creep.__move__) {
-    return ERR_INVALID_TARGET
-  }
-
-  if (creep.fatigue) {
-    return ERR_TIRED
-  }
-
-  return ERR_BUSY
-}
-
 const work = function (creep) {
   signController(creep)
-  getBoosted(creep)
   grabEnergy(creep)
   upgradeController(creep)
   restockEnergy(creep)
@@ -1082,8 +1050,7 @@ const work = function (creep) {
   dismantle(creep)
   shareEnergy(creep)
   cancelConstructionSites(creep)
-  handleInvasion(creep) // TODO only when __work__
-  moveAround(creep)
+  handleInvasion(creep)
 
   return OK
 }
@@ -1097,7 +1064,6 @@ const controlCreeps = function () {
     if (creep.spawning) continue
 
     creep.__work__ = creep.getActiveBodyparts(WORK)
-    creep.__move__ = creep.getActiveBodyparts(MOVE)
 
     if (creep.__work__ > 0) {
       work(creep)
@@ -1493,63 +1459,10 @@ const buyEnergy = function (room) {
   return rc
 }
 
-// eslint-disable-next-line no-unused-vars
-const RESOURCES_TO_KEEP =
-  [
-    RESOURCE_ENERGY, // source may be not enough
-    RESOURCE_POWER, // power creep upgrade
-    RESOURCE_GHODIUM, // nuker
-    RESOURCE_CATALYZED_GHODIUM_ACID, // controller upgrade, in order of prio
-    RESOURCE_GHODIUM_ACID,
-    RESOURCE_GHODIUM_HYDRIDE,
-    RESOURCE_OPS // because operator may use it as stash
-  ]
-
 const performRoomTrading = function (room) {
   if (buyEnergy(room) === OK) return OK
 
   return ERR_NOT_FOUND
-}
-const getPriceFromMemory = function (what) {
-  if (Memory.prices === undefined) {
-    return undefined
-  }
-
-  return Memory.prices[what]
-}
-
-const performShardMarketFuzz = function (room) {
-  // kevin.jpg
-  if (_.random(69) === 69) {
-    for (const order of Game.valueOrders) {
-      if (room.name === order.roomName) {
-        return Game.market.deal(order.id, _.random(1, order.amount), room.name)
-      }
-    }
-  }
-
-  if (_.random(690) !== 690) return ERR_TIRED
-
-  const lastPrice = getPriceFromMemory(RESOURCE_ENERGY)
-  if (!lastPrice) return ERR_NOT_FOUND
-
-  // sell energy for price lower that were bought
-  // try to drive market down a bit
-  const fuzzPrice = (_.random(9) === 6) ? (_.random(690) / 690) : (lastPrice * (1.0 - ENERGY_DISCOUNT + 0.069))
-
-  for (const order of Game.valueOrders) {
-    if (order.resourceType === RESOURCE_ENERGY) {
-      return Game.market.changeOrderPrice(order.id, fuzzPrice)
-    }
-  }
-
-  return Game.market.createOrder({
-    type: ORDER_SELL,
-    resourceType: RESOURCE_ENERGY,
-    price: fuzzPrice,
-    totalAmount: _.random(69),
-    roomName: room.name
-  })
 }
 
 const PIXELS_TO_KEEP = 500
@@ -1613,38 +1526,6 @@ const performPixelTrading = function () {
   return ERR_NOT_IN_RANGE
 }
 
-const performIntershardMarketFuzz = function () {
-  if (_.random(42) === 42) {
-    for (const order of Game.valueOrders) {
-      if (order.resourceType === PIXEL) {
-        return Game.market.deal(order.id, 1)
-      }
-    }
-  }
-
-  if (_.random(4200) !== 42) return ERR_TIRED
-
-  const lastPrice = getPriceFromMemory(PIXEL)
-  if (!lastPrice) return ERR_NOT_FOUND
-
-  // buy pixels for price higher than were sold
-  // try to drive market up a bit
-  const fuzzPrice = lastPrice * (1.0 + PIXELS_DISCOUNT - 0.042)
-
-  for (const order of Game.valueOrders) {
-    if (order.resourceType === PIXEL) {
-      return Game.market.changeOrderPrice(order.id, fuzzPrice)
-    }
-  }
-
-  return Game.market.createOrder({
-    type: ORDER_BUY,
-    resourceType: PIXEL,
-    price: fuzzPrice,
-    totalAmount: 1
-  })
-}
-
 const cancelCompletedOrders = function () {
   for (const order of Game.valueOrders) {
     if (order.remainingAmount === 0) {
@@ -1666,12 +1547,9 @@ const performTrading = function () {
     if (!room.terminal || room.terminal.cooldown) continue
 
     if (performRoomTrading(room) === OK) return
-
-    performShardMarketFuzz(room)
   }
 
   performPixelTrading()
-  performIntershardMarketFuzz()
 
   cancelCompletedOrders()
 
