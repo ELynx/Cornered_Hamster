@@ -22,7 +22,7 @@ const ROOM_PLANS = {
     5: 'ࢃःऄ룃⡂⢂⣂⤂⥃⥄ᢃᤃᤄ飃', // -//-
     6: 'ࢃःऄ룃⡂⢂⣂⤂⥃⥄ᢃᤃᤄ飃', // -//-
     7: 'ࢃःऄ룃뤂⡂⢂⥃⥄ᢃᤃᤄ飃餂飂', // mutate extension into spawn + spawn rampart, mutate extension into terminal + terminal rampart
-    8: 'ࢃःऄ룃뤂뢂⡂⢂⥃ᢃᤃᤄ飃餂飂颂' // mutate extension into spawn + spawn rampart
+    8: 'ࢃःऄ룃뤂뢂⡂⥃⥄ᢃᤃᤄ飃餂飂颂' // mutate extension into spawn + spawn rampart
   }
 }
 
